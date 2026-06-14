@@ -30,6 +30,29 @@ Every signal carries a confidence level, and the engine deliberately returns **"
 
 ---
 
+## Demo
+
+<div align="center">
+
+<img src="docs/demo.gif" alt="AI Trend Predictor live demo" width="100%">
+
+<em>Live candles streaming across timeframes — signal, AI read, risk meters and forecast all updating in real time.</em>
+
+</div>
+
+<table>
+<tr>
+<td width="42%" valign="top"><img src="docs/meters.png" alt="Trade and market risk meters" width="100%"></td>
+<td width="58%" valign="top"><img src="docs/forecast.png" alt="Predicted next candle, average line and forward projection" width="100%"></td>
+</tr>
+<tr>
+<td valign="top"><b>Risk meters</b> — two gauges side by side, both tied to the selected timeframe: <b>Trade</b> (is it safe to enter <em>right now</em>?) and <b>Market</b> (is the tape itself clean or choppy?).</td>
+<td valign="top"><b>Forecast &amp; average line</b> — the yellow average trend line, purple where it broke against its own prediction, and a dashed orange projection of where it is heading next.</td>
+</tr>
+</table>
+
+---
+
 ## Features
 
 | Area | What it does |
@@ -39,9 +62,11 @@ Every signal carries a confidence level, and the engine deliberately returns **"
 | **Regime-aware signal** | Indicators are weighted by market regime (ADX) and confirmed against the higher timeframe, then calibrated to only commit when the board leans decisively |
 | **AI analysis** | OpenAI or Claude reads the indicators plus live news headlines and explains the call, with key drivers and a risk note |
 | **Next-candle forecast** | Projects the next candle's likely size and placement, drawn as a ghost candle on the chart |
+| **Trend prediction** | A multi-horizon read (near / mid / far) of where price is likely to head — direction, projected move, target and confidence for each horizon |
+| **Risk meters** | Two speedometer gauges tied to the selected timeframe: *Trade* (safe to enter now?) and *Market* (clean trend vs choppy tape), each with the factors behind the read |
 | **Predicted-candle history** | Overlays every past forecast so you can see, at a glance, how often it was right |
 | **Trend analysis** | Identifies the current trend, how long it has run, and a survival-based estimate of how much longer it may last |
-| **Average trend line** | A coloured moving average — yellow where the trend held, orange where it broke, grey projecting where it is heading |
+| **Average trend line** | A coloured moving average — yellow where the trend held, purple where it broke against its prediction, and a dashed orange projection of where it is heading next |
 | **Accuracy report** | Forward-tests every prediction and reconstructs historical accuracy: correct / slightly off / completely off, filterable by market and timeframe |
 | **Customisable** | Toggle any indicator on/off, send it to the AI, or draw it on the chart — settings persist locally |
 | **Responsive** | Works on desktop and mobile, with collapsible panels and a resizable report drawer |
