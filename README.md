@@ -30,15 +30,7 @@ Every signal carries a confidence level, and the engine deliberately returns **"
 
 ---
 
-## Demo
-
-<div align="center">
-
-<img src="docs/demo.gif" alt="AI Trend Predictor live demo" width="100%">
-
-<em>Live candles streaming across timeframes — signal, AI read, risk meters and forecast all updating in real time.</em>
-
-</div>
+## Screenshots
 
 <table>
 <tr>
