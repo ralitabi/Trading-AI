@@ -1,0 +1,8 @@
+*.db
+*.log
+dev.bat
+dev.ps1
+DEPLOY.md
+render.yaml
+__pycache__/
+.venv/

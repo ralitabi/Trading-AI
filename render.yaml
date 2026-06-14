@@ -1,0 +1,26 @@
+# Render Blueprint — deploys the FastAPI backend on the free tier.
+# In Render: New → Blueprint → pick this repo. It reads this file, then prompts
+# you for the two secret keys (OPENAI_API_KEY, ANTHROPIC_API_KEY).
+services:
+  - type: web
+    name: ai-trend-predictor-api
+    runtime: python
+    plan: free
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /assets
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.7"
+      - key: OPENAI_MODEL
+        value: gpt-4o-mini
+      - key: ANTHROPIC_MODEL
+        value: claude-opus-4-8
+      - key: AI_PROVIDER
+        value: auto
+      # Secrets — Render will prompt you to enter these (never stored in the repo)
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
