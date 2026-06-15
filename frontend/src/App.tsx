@@ -83,6 +83,11 @@ function Dashboard() {
   const [assets, setAssets] = useState<AssetInfo[]>([]);
   const [symbol, setSymbol] = useState("BTCUSDT");
   const [tf, setTf] = useState("1h");
+  const [theme, setTheme] = useState(() => localStorage.getItem("trend-theme") || "dark");
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+    localStorage.setItem("trend-theme", theme);
+  }, [theme]);
   const [candles, setCandles] = useState<Candle[]>([]);
   const [signal, setSignal] = useState<SignalData | null>(null);
   const [prediction, setPrediction] = useState<Prediction | null>(null);
@@ -654,6 +659,14 @@ function Dashboard() {
         >
           📊 Accuracy Report
         </button>
+        <div className="theme-switch" role="group" aria-label="Theme">
+          {([["dark", "🌙"], ["light", "☀️"], ["pink", "🌸"]] as const).map(([t, icon]) => (
+            <button key={t} className={theme === t ? "ts-btn active" : "ts-btn"}
+              title={`${t[0].toUpperCase() + t.slice(1)} theme`} onClick={() => setTheme(t)}>
+              {icon}
+            </button>
+          ))}
+        </div>
       </header>
 
       <div className="price-header">
@@ -752,6 +765,7 @@ function Dashboard() {
             chartPattern={showPatterns && chartPatterns.length > 0 ? chartPatterns[0] : null}
             drawMode={drawMode}
             clearSignal={clearSignal}
+            theme={theme}
             onTick={onTick}
             onResync={onResync}
           />

@@ -93,12 +93,31 @@ interface Props {
   drawMode?: "trendline" | "fib" | null;
   /** Increment to clear all user-drawn trendlines & Fibonacci levels */
   clearSignal?: number;
+  /** active UI theme — re-themes the chart's text/grid/borders */
+  theme?: string;
   onTick?: (price: number) => void;
   /** Called after a WebSocket reconnect — history may have gaps, so refetch */
   onResync?: () => void;
 }
 
-export default function Chart({ candles, live, tf, levels, plan, forecast, forecastHistory, overlays, avgLine, patterns, chartPattern, drawMode, clearSignal, onTick, onResync }: Props) {
+function themeColors() {
+  const s = getComputedStyle(document.documentElement);
+  return {
+    text: s.getPropertyValue("--chart-text").trim() || "#8b93a7",
+    grid: s.getPropertyValue("--chart-grid").trim() || "rgba(140,150,170,0.07)",
+    border: s.getPropertyValue("--chart-border").trim() || "rgba(140,150,170,0.15)",
+  };
+}
+
+// the avg line's "held" segments are gold (#f5c518) — too faint on light/pink,
+// so swap to a deeper gold on those themes for contrast.
+function fixAvgColor(c: string): string {
+  if (c !== "#f5c518") return c;
+  const t = document.documentElement.dataset.theme;
+  return t === "light" || t === "pink" ? "#a16207" : c;
+}
+
+export default function Chart({ candles, live, tf, levels, plan, forecast, forecastHistory, overlays, avgLine, patterns, chartPattern, drawMode, clearSignal, theme, onTick, onResync }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const candleSeriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
@@ -120,23 +139,24 @@ export default function Chart({ candles, live, tf, levels, plan, forecast, forec
 
   useEffect(() => {
     if (!containerRef.current) return;
+    const tc = themeColors();
     const chart = createChart(containerRef.current, {
       layout: {
         background: { type: ColorType.Solid, color: "transparent" },
-        textColor: "#8b93a7",
+        textColor: tc.text,
         fontFamily: "'Inter', sans-serif",
       },
       grid: {
-        vertLines: { color: "rgba(140,150,170,0.07)" },
-        horzLines: { color: "rgba(140,150,170,0.07)" },
+        vertLines: { color: tc.grid },
+        horzLines: { color: tc.grid },
       },
       rightPriceScale: {
-        borderColor: "rgba(140,150,170,0.15)",
+        borderColor: tc.border,
         // smooth, non-jumpy autoscale as live ticks arrive
         scaleMargins: { top: 0.08, bottom: 0.22 },
       },
       timeScale: {
-        borderColor: "rgba(140,150,170,0.15)",
+        borderColor: tc.border,
         timeVisible: true,
         rightOffset: 6,
         shiftVisibleRangeOnNewBar: true,
@@ -259,12 +279,25 @@ export default function Chart({ candles, live, tf, levels, plan, forecast, forec
     const pts = avgLine ?? [];
     const real = pts.filter((p) => p.seg !== "proj");
     const projected = pts.filter((p) => p.seg === "proj");
-    series.setData(real.map((p) => ({ time: p.time as UTCTimestamp, value: p.value, color: p.color })));
+    series.setData(real.map((p) => ({ time: p.time as UTCTimestamp, value: p.value, color: fixAvgColor(p.color) })));
     const anchor = real.length ? [{ time: real[real.length - 1].time, value: real[real.length - 1].value }] : [];
     proj.setData(
       [...anchor, ...projected].map((p) => ({ time: p.time as UTCTimestamp, value: p.value })),
     );
-  }, [avgLine]);
+  }, [avgLine, theme]);
+
+  // re-theme the chart's text / grid / borders when the UI theme changes
+  useEffect(() => {
+    const chart = chartRef.current;
+    if (!chart) return;
+    const tc = themeColors();
+    chart.applyOptions({
+      layout: { textColor: tc.text },
+      grid: { vertLines: { color: tc.grid }, horzLines: { color: tc.grid } },
+      rightPriceScale: { borderColor: tc.border },
+      timeScale: { borderColor: tc.border },
+    });
+  }, [theme]);
 
   // keep the click handler's draw mode current; reset any half-finished anchor
   useEffect(() => {

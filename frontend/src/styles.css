@@ -1,4 +1,8 @@
-:root {
+/* ============ THEMES ============ */
+/* Dark is the default (also under [data-theme="dark"]). Light & pink override
+   the same variables, so every component that uses var(--*) re-themes for free.
+   up=green / down=red stay semantic across all themes. */
+:root, [data-theme="dark"] {
   --bg: #0a0e17;
   --bg-panel: #0e1422;
   --bg-raised: #151c2c;
@@ -14,6 +18,54 @@
   --amber: #f0b90b;
   --accent: #2962ff;
   --accent-soft: rgba(41, 98, 255, 0.14);
+  --overlay-bg: rgba(10, 14, 23, 0.82);
+  --chart-text: #8b93a7;
+  --chart-grid: rgba(140, 150, 170, 0.07);
+  --chart-border: rgba(140, 150, 170, 0.15);
+}
+
+[data-theme="light"] {
+  --bg: #f4f6fb;
+  --bg-panel: #ffffff;
+  --bg-raised: #eef2f8;
+  --bg-elevated: #e4eaf3;
+  --border: rgba(20, 30, 55, 0.12);
+  --border-strong: rgba(20, 30, 55, 0.22);
+  --text: #15233b;
+  --text-dim: #5a6678;
+  --text-faint: #9aa4b6;
+  --green: #0e9f6e;
+  --green-bright: #059669;
+  --red: #e02424;
+  --amber: #b9770a;
+  --accent: #2563eb;
+  --accent-soft: rgba(37, 99, 235, 0.12);
+  --overlay-bg: rgba(255, 255, 255, 0.88);
+  --chart-text: #5a6678;
+  --chart-grid: rgba(20, 30, 55, 0.07);
+  --chart-border: rgba(20, 30, 55, 0.14);
+}
+
+[data-theme="pink"] {
+  --bg: #fff0f6;
+  --bg-panel: #ffffff;
+  --bg-raised: #ffe4ef;
+  --bg-elevated: #ffd6e7;
+  --border: rgba(150, 30, 85, 0.14);
+  --border-strong: rgba(150, 30, 85, 0.26);
+  --text: #3d1028;
+  --text-dim: #8a5a72;
+  --text-faint: #c193a8;
+  --green: #0e9f6e;
+  --green-bright: #059669;
+  --red: #e02424;
+  --amber: #b9770a;
+  --accent: #d6336c;
+  --accent-soft: rgba(214, 51, 108, 0.14);
+  --overlay-bg: rgba(255, 240, 246, 0.9);
+  --chart-text: #8a5a72;
+  --chart-grid: rgba(150, 30, 85, 0.07);
+  --chart-border: rgba(150, 30, 85, 0.14);
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -60,7 +112,7 @@ body {
 .topbar {
   display: flex; align-items: center; gap: 18px;
   padding: 0 18px; height: 52px; border-bottom: 1px solid var(--border);
-  background: linear-gradient(180deg, #10182a 0%, var(--bg-panel) 100%);
+  background: linear-gradient(180deg, var(--bg-elevated) 0%, var(--bg-panel) 100%);
   flex-wrap: nowrap;
 }
 .logo {
@@ -686,13 +738,22 @@ body {
 .vbox-neutral .vbox-num { color: var(--amber); }
 .vol-count { color: var(--text-faint); }
 
+/* ---- theme switcher ---- */
+.theme-switch { display: inline-flex; gap: 2px; background: var(--bg-raised); border: 1px solid var(--border); border-radius: 9px; padding: 2px; }
+.ts-btn {
+  background: transparent; border: none; cursor: pointer; font-size: 13px; line-height: 1;
+  padding: 5px 8px; border-radius: 7px; filter: grayscale(0.5) opacity(0.6); transition: all 0.12s ease;
+}
+.ts-btn:hover { filter: none; background: var(--bg-elevated); }
+.ts-btn.active { filter: none; background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); }
+
 /* ---- drawing tools (trendline / Fibonacci) ---- */
 .draw-tools {
   position: absolute; right: 12px; top: 12px; z-index: 5;
   display: flex; gap: 6px;
 }
 .dt {
-  background: rgba(10,14,23,0.85); border: 1px solid var(--border); color: var(--text-dim);
+  background: var(--overlay-bg); border: 1px solid var(--border); color: var(--text-dim);
   border-radius: 8px; padding: 5px 9px; font-family: inherit; font-size: 11px; font-weight: 600;
   cursor: pointer; backdrop-filter: blur(4px); transition: all 0.12s ease;
 }
@@ -709,7 +770,7 @@ body {
 .candle-timer {
   position: absolute; left: 12px; bottom: 12px; z-index: 4;
   display: flex; align-items: center; gap: 8px;
-  background: rgba(10,14,23,0.82); border: 1px solid var(--border);
+  background: var(--overlay-bg); border: 1px solid var(--border);
   border-radius: 9px; padding: 6px 10px; backdrop-filter: blur(4px);
   pointer-events: none;
 }
