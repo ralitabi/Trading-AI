@@ -185,6 +185,27 @@ export interface TrendcastResponse {
   forecast: TrendForecast | null;
 }
 
+export interface PatternItem {
+  time: number;
+  name: string;
+  direction: "bullish" | "bearish" | "neutral";
+  price: number;
+  kind: "candlestick" | "divergence";
+}
+
+export interface PatternsResponse {
+  symbol: string;
+  tf: string;
+  candlesticks: PatternItem[];
+  divergences: PatternItem[];
+  summary: {
+    bias: "bullish" | "bearish" | "neutral";
+    bullish: number;
+    bearish: number;
+    latest: PatternItem[];
+  };
+}
+
 export interface BestWindow {
   start_utc: number;
   end_utc: number;

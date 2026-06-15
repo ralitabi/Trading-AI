@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  fetchAssets, fetchAvgLine, fetchCandles, fetchForecastHistory, fetchOverlays, fetchPrediction,
-  fetchSignal, fetchTrendcast,
+  fetchAssets, fetchAvgLine, fetchCandles, fetchForecastHistory, fetchOverlays, fetchPatterns,
+  fetchPrediction, fetchSignal, fetchTrendcast,
 } from "./api";
 import type {
-  AssetInfo, AvgLinePoint, Candle, ForecastHistItem, OverlaysResponse, Prediction, SignalData,
-  TrendForecast as TrendForecastData,
+  AssetInfo, AvgLinePoint, Candle, ForecastHistItem, OverlaysResponse, PatternItem, PatternsResponse,
+  Prediction, SignalData, TrendForecast as TrendForecastData,
 } from "./types";
 import Chart, { type LiveFeed, type OverlaySeries } from "./components/Chart";
 import AssetPicker from "./components/AssetPicker";
@@ -15,6 +15,7 @@ import SignalPanel from "./components/SignalPanel";
 import IndicatorPanel from "./components/IndicatorPanel";
 import TradeSetup from "./components/TradeSetup";
 import TrendForecast from "./components/TrendForecast";
+import PatternsPanel from "./components/PatternsPanel";
 import AICard from "./components/AICard";
 import ReportPage from "./components/ReportPage";
 import { useIndicators } from "./useIndicators";
@@ -95,6 +96,13 @@ function Dashboard() {
   }, [showAvgLine]);
   const indCtrl = useIndicators();
   const [trendcast, setTrendcast] = useState<TrendForecastData | null>(null);
+  const [patterns, setPatterns] = useState<PatternsResponse | null>(null);
+  const [showPatterns, setShowPatterns] = useState(
+    () => localStorage.getItem("trend-patterns") !== "false",
+  );
+  useEffect(() => {
+    localStorage.setItem("trend-patterns", String(showPatterns));
+  }, [showPatterns]);
   const [livePrice, setLivePrice] = useState<number | null>(null);
   const [tickDir, setTickDir] = useState<"up" | "down" | "">("");
   const prevTickRef = useRef<number | null>(null);
@@ -272,6 +280,16 @@ function Dashboard() {
     }
   }, []);
 
+  const loadPatterns = useCallback(async (sym: string, timeframe: string) => {
+    const key = `${sym}|${timeframe}`;
+    try {
+      const r = await fetchPatterns(sym, timeframe);
+      if (viewKey.current === key) setPatterns(r);
+    } catch {
+      /* patterns are supplementary */
+    }
+  }, []);
+
   const loadPrediction = useCallback(async (sym: string, timeframe: string) => {
     const key = `${sym}|${timeframe}`;
     try {
@@ -358,6 +376,21 @@ function Dashboard() {
     }, ms);
     return () => clearInterval(id);
   }, [symbol, tf, loadTrendcast]);
+
+  // Patterns + divergences: load on toggle-on / symbol/tf change, refresh on a
+  // candle-paced cadence (they only change when a candle closes).
+  useEffect(() => {
+    if (!showPatterns) {
+      setPatterns(null);
+      return;
+    }
+    loadPatterns(symbol, tf);
+    const ms = INTRADAY.has(tf) ? 10_000 : 30_000;
+    const id = setInterval(() => {
+      if (!document.hidden) loadPatterns(symbol, tf);
+    }, ms);
+    return () => clearInterval(id);
+  }, [showPatterns, symbol, tf, loadPatterns]);
 
   // Toggling indicators on/off ⇒ immediately re-score the signal.
   useEffect(() => {
@@ -454,6 +487,8 @@ function Dashboard() {
             onToggleForecastHist={setShowForecastHist}
             showAvgLine={showAvgLine}
             onToggleAvgLine={setShowAvgLine}
+            showPatterns={showPatterns}
+            onTogglePatterns={setShowPatterns}
           />
         )}
         <button
@@ -552,6 +587,7 @@ function Dashboard() {
             forecastHistory={showForecastHist ? forecastHist : undefined}
             overlays={overlaySeries}
             avgLine={showAvgLine ? avgLine : undefined}
+            patterns={showPatterns && patterns ? [...patterns.candlesticks, ...patterns.divergences] : undefined}
             onTick={onTick}
             onResync={onResync}
           />
@@ -579,6 +615,7 @@ function Dashboard() {
           )}
           {signal && <TradeSetup s={signal} />}
           {trendcast && <TrendForecast f={trendcast} />}
+          {showPatterns && patterns && <PatternsPanel p={patterns} />}
           {prediction && <AICard p={prediction} />}
         </aside>
       </main>

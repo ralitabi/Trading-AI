@@ -6,12 +6,16 @@ import {
   LineSeries,
   LineStyle,
   createChart,
+  createSeriesMarkers,
+  type ISeriesMarkersPluginApi,
+  type SeriesMarker,
+  type Time,
   type IChartApi,
   type IPriceLine,
   type ISeriesApi,
   type UTCTimestamp,
 } from "lightweight-charts";
-import type { AvgLinePoint, Candle, ForecastHistItem, Levels, NextCandle, TradePlan } from "../types";
+import type { AvgLinePoint, Candle, ForecastHistItem, Levels, NextCandle, PatternItem, TradePlan } from "../types";
 
 export interface OverlaySeries {
   key: string;
@@ -26,6 +30,14 @@ const WS_INTERVAL: Record<string, string> = {
 
 const TF_SECONDS: Record<string, number> = {
   "1m": 60, "5m": 300, "15m": 900, "1h": 3600, "4h": 14400, "1d": 86400, "1wk": 604800,
+};
+
+// short marker labels so the chart stays readable
+const PATTERN_ABBR: Record<string, string> = {
+  "Doji": "Doji", "Hammer": "Hammer", "Shooting Star": "Star",
+  "Bullish Engulfing": "Engulf", "Bearish Engulfing": "Engulf",
+  "RSI Bullish Divergence": "RSI div", "RSI Bearish Divergence": "RSI div",
+  "MACD Bullish Divergence": "MACD div", "MACD Bearish Divergence": "MACD div",
 };
 
 export interface LiveFeed {
@@ -73,12 +85,14 @@ interface Props {
   overlays?: OverlaySeries[];
   /** Average trend line (per-point coloured) + gray projection */
   avgLine?: AvgLinePoint[];
+  /** Candlestick patterns + divergences, drawn as labelled markers */
+  patterns?: PatternItem[];
   onTick?: (price: number) => void;
   /** Called after a WebSocket reconnect — history may have gaps, so refetch */
   onResync?: () => void;
 }
 
-export default function Chart({ candles, live, tf, levels, plan, forecast, forecastHistory, overlays, avgLine, onTick, onResync }: Props) {
+export default function Chart({ candles, live, tf, levels, plan, forecast, forecastHistory, overlays, avgLine, patterns, onTick, onResync }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const candleSeriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
@@ -87,6 +101,7 @@ export default function Chart({ candles, live, tf, levels, plan, forecast, forec
   const histSeriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
   const avgSeriesRef = useRef<ISeriesApi<"Line"> | null>(null);
   const avgProjSeriesRef = useRef<ISeriesApi<"Line"> | null>(null);
+  const markersRef = useRef<ISeriesMarkersPluginApi<Time> | null>(null);
   const overlayRef = useRef<Map<string, ISeriesApi<"Line">>>(new Map());
   const lastBarRef = useRef<Bar | null>(null);
   const lastTickNotify = useRef(0);
@@ -174,6 +189,7 @@ export default function Chart({ candles, live, tf, levels, plan, forecast, forec
     histSeriesRef.current = histSeries;
     avgSeriesRef.current = avgSeries;
     avgProjSeriesRef.current = avgProjSeries;
+    markersRef.current = createSeriesMarkers(candleSeries, []);
     return () => chart.remove();
   }, []);
 
@@ -194,6 +210,27 @@ export default function Chart({ candles, live, tf, levels, plan, forecast, forec
       [...anchor, ...projected].map((p) => ({ time: p.time as UTCTimestamp, value: p.value })),
     );
   }, [avgLine]);
+
+  // candlestick patterns + divergences as labelled markers on the price series
+  useEffect(() => {
+    const m = markersRef.current;
+    if (!m) return;
+    const markers: SeriesMarker<Time>[] = (patterns ?? [])
+      .slice()
+      .sort((a, b) => a.time - b.time)
+      .map((p) => {
+        const bull = p.direction === "bullish";
+        const bear = p.direction === "bearish";
+        return {
+          time: p.time as UTCTimestamp,
+          position: bull ? "belowBar" : "aboveBar",
+          color: bull ? "#16c784" : bear ? "#ea3943" : "#8891a5",
+          shape: bull ? "arrowUp" : bear ? "arrowDown" : "circle",
+          text: PATTERN_ABBR[p.name] ?? p.name,
+        };
+      });
+    m.setMarkers(markers);
+  }, [patterns]);
 
   // predicted-candle history overlay, colored by correctness vs the real candle
   useEffect(() => {

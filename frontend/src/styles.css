@@ -800,6 +800,36 @@ body {
 .tf-conf-num { font-size: 10px; color: var(--text-dim); font-family: "JetBrains Mono", monospace; min-width: 30px; text-align: right; }
 .tf-foot { font-size: 10px; color: var(--text-faint); margin-top: 9px; line-height: 1.3; }
 
+/* ---- patterns & divergences ---- */
+.pat-bias { font-size: 11px; font-weight: 800; letter-spacing: 0.3px; text-transform: capitalize; }
+.pat-bias.pat-bullish { color: var(--green); }
+.pat-bias.pat-bearish { color: var(--red); }
+.pat-bias.pat-neutral { color: var(--amber); }
+.pat-tally { display: flex; align-items: center; gap: 10px; margin-bottom: 9px; font-size: 11px; }
+.pat-tally-item { font-weight: 700; padding: 2px 8px; border-radius: 6px; }
+.pat-tally-item.bull { color: var(--green); background: rgba(22,199,132,0.12); }
+.pat-tally-item.bear { color: var(--red); background: rgba(234,57,67,0.12); }
+.pat-tally-note { color: var(--text-faint); margin-left: auto; }
+.pat-list { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+.pat-row {
+  display: flex; align-items: center; gap: 8px; font-size: 12px;
+  border: 1px solid var(--border); border-left-width: 3px; border-radius: 8px; padding: 7px 9px;
+  border-left-color: var(--text-faint);
+}
+.pat-row.pat-bullish { border-left-color: var(--green); }
+.pat-row.pat-bearish { border-left-color: var(--red); }
+.pat-row.pat-neutral { border-left-color: var(--amber); }
+.pat-icon { font-size: 11px; }
+.pat-row.pat-bullish .pat-icon { color: var(--green); }
+.pat-row.pat-bearish .pat-icon { color: var(--red); }
+.pat-row.pat-neutral .pat-icon { color: var(--amber); }
+.pat-name { color: var(--text); font-weight: 600; }
+.pat-kind { font-size: 9px; text-transform: uppercase; letter-spacing: 0.4px; padding: 1px 6px; border-radius: 5px; background: rgba(140,150,170,0.12); color: var(--text-dim); }
+.pat-kind.pk-divergence { background: rgba(123,63,242,0.16); color: #b388ff; }
+.pat-time { margin-left: auto; color: var(--text-faint); font-size: 10px; font-family: "JetBrains Mono", monospace; }
+.pat-empty { font-size: 12px; color: var(--text-dim); }
+.pat-foot { font-size: 10px; color: var(--text-faint); margin-top: 9px; line-height: 1.3; }
+
 /* ---- gradient call-to-action ---- */
 .full-analysis-btn {
   width: 100%; margin-top: 14px; padding: 12px;

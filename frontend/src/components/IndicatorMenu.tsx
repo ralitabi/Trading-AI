@@ -13,11 +13,13 @@ interface Props {
   onToggleForecastHist: (v: boolean) => void;
   showAvgLine: boolean;
   onToggleAvgLine: (v: boolean) => void;
+  showPatterns: boolean;
+  onTogglePatterns: (v: boolean) => void;
 }
 
 export default function IndicatorMenu({
   indicators, overlayable, ctrl, showForecastHist, onToggleForecastHist,
-  showAvgLine, onToggleAvgLine,
+  showAvgLine, onToggleAvgLine, showPatterns, onTogglePatterns,
 }: Props) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -70,6 +72,18 @@ export default function IndicatorMenu({
             <span className="im-special-text">
               <b>Average trend line</b>
               <span className="im-special-sub">🟡 yellow where the trend held · 🟣 purple where it broke (wrong-prediction branch) · 🟠 dashed orange = the predicted next line</span>
+            </span>
+          </label>
+
+          <label className="im-special">
+            <span className="switch">
+              <input type="checkbox" checked={showPatterns}
+                onChange={(e) => onTogglePatterns(e.target.checked)} />
+              <span className="slider" />
+            </span>
+            <span className="im-special-text">
+              <b>Patterns &amp; divergences</b>
+              <span className="im-special-sub">candlestick patterns (engulfing, hammer, doji…) and RSI/MACD divergences, marked on the chart with a summary panel</span>
             </span>
           </label>
 
