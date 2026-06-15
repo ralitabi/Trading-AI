@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   fetchAssets, fetchAvgLine, fetchCalendar, fetchCandles, fetchContext, fetchForecastHistory,
-  fetchNews, fetchOrderBook, fetchOverlays, fetchPatterns, fetchPrediction, fetchSignal,
-  fetchTrendcast, fetchVolProfile,
+  fetchNews, fetchOrderBook, fetchOverlays, fetchPatterns, fetchPortfolio, fetchPrediction,
+  fetchSignal, fetchTrendcast, fetchVolProfile,
 } from "./api";
 import type {
   AssetInfo, AvgLinePoint, CalendarEvent, Candle, ForecastHistItem, MarketContextResponse,
-  NewsResponse, OrderBookResponse, OverlaysResponse, PatternItem, PatternsResponse, Prediction,
-  SignalData, TrendForecast as TrendForecastData, VolProfileResponse,
+  NewsResponse, OrderBookResponse, OverlaysResponse, PatternItem, PatternsResponse, Portfolio,
+  Prediction, SignalData, TrendForecast as TrendForecastData, VolProfileResponse,
 } from "./types";
 import Chart, { type LiveFeed, type OverlaySeries } from "./components/Chart";
 import AssetPicker from "./components/AssetPicker";
@@ -22,6 +22,7 @@ import MarketContext from "./components/MarketContext";
 import VolumeProfile from "./components/VolumeProfile";
 import OrderBook from "./components/OrderBook";
 import NewsPanel from "./components/NewsPanel";
+import PaperPortfolio from "./components/PaperPortfolio";
 import AICard from "./components/AICard";
 import ReportPage from "./components/ReportPage";
 import { useIndicators } from "./useIndicators";
@@ -108,6 +109,7 @@ function Dashboard() {
   const [orderBook, setOrderBook] = useState<OrderBookResponse | null>(null);
   const [news, setNews] = useState<NewsResponse | null>(null);
   const [calendar, setCalendar] = useState<CalendarEvent[]>([]);
+  const [portfolio, setPortfolio] = useState<Portfolio | null>(null);
   const [showPatterns, setShowPatterns] = useState(
     () => localStorage.getItem("trend-patterns") !== "false",
   );
@@ -347,6 +349,14 @@ function Dashboard() {
     }
   }, []);
 
+  const loadPortfolio = useCallback(async () => {
+    try {
+      setPortfolio(await fetchPortfolio());
+    } catch {
+      /* paper portfolio is supplementary */
+    }
+  }, []);
+
   const loadPrediction = useCallback(async (sym: string, timeframe: string) => {
     const key = `${sym}|${timeframe}`;
     try {
@@ -502,6 +512,15 @@ function Dashboard() {
     }, 1_800_000);
     return () => clearInterval(id);
   }, [loadCalendar]);
+
+  // Paper-trading portfolio (all markets) — re-scores open trades each fetch.
+  useEffect(() => {
+    loadPortfolio();
+    const id = setInterval(() => {
+      if (!document.hidden) loadPortfolio();
+    }, 15_000);
+    return () => clearInterval(id);
+  }, [loadPortfolio]);
 
   // Toggling indicators on/off ⇒ immediately re-score the signal.
   useEffect(() => {
@@ -731,6 +750,7 @@ function Dashboard() {
           {orderBook && <OrderBook o={orderBook} />}
           {volProfile && <VolumeProfile p={volProfile} />}
           {(news || calendar.length > 0) && <NewsPanel news={news} events={calendar} />}
+          {portfolio && <PaperPortfolio p={portfolio} />}
           {prediction && <AICard p={prediction} />}
         </aside>
       </main>

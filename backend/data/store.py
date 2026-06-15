@@ -59,7 +59,114 @@ def _conn() -> sqlite3.Connection:
             PRIMARY KEY (symbol, tf, target_time)
         )"""
     )
+    # paper-trading book — hypothetical trades auto-opened from directional
+    # signals and closed when price hits the ATR stop or target.
+    conn.execute(
+        """CREATE TABLE IF NOT EXISTS paper_trades (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            symbol TEXT NOT NULL,
+            tf TEXT NOT NULL,
+            direction TEXT NOT NULL,
+            entry REAL NOT NULL,
+            stop REAL NOT NULL,
+            target REAL NOT NULL,
+            rr REAL NOT NULL,
+            opened_ts INTEGER NOT NULL,
+            status TEXT NOT NULL,
+            exit_price REAL,
+            exit_ts INTEGER,
+            result TEXT,
+            r_multiple REAL
+        )"""
+    )
     return conn
+
+
+def has_open_trade(symbol: str, tf: str) -> bool:
+    with _lock:
+        conn = _conn()
+        try:
+            r = conn.execute(
+                "SELECT 1 FROM paper_trades WHERE symbol=? AND tf=? AND status='open' LIMIT 1",
+                (symbol, tf)).fetchone()
+            return r is not None
+        finally:
+            conn.close()
+
+
+def open_paper_trade(symbol: str, tf: str, direction: str, entry: float,
+                     stop: float, target: float, rr: float) -> None:
+    with _lock:
+        conn = _conn()
+        try:
+            conn.execute(
+                "INSERT INTO paper_trades (symbol, tf, direction, entry, stop, target, rr,"
+                " opened_ts, status) VALUES (?,?,?,?,?,?,?,?,'open')",
+                (symbol, tf, direction, entry, stop, target, rr, int(time.time())),
+            )
+            conn.commit()
+        finally:
+            conn.close()
+
+
+def open_trades() -> list[dict]:
+    with _lock:
+        conn = _conn()
+        try:
+            conn.row_factory = sqlite3.Row
+            return [dict(r) for r in conn.execute(
+                "SELECT * FROM paper_trades WHERE status='open'").fetchall()]
+        finally:
+            conn.close()
+
+
+def close_paper_trade(trade_id: int, exit_price: float, result: str, r_multiple: float) -> None:
+    with _lock:
+        conn = _conn()
+        try:
+            conn.execute(
+                "UPDATE paper_trades SET status='closed', exit_price=?, exit_ts=?, result=?,"
+                " r_multiple=? WHERE id=?",
+                (exit_price, int(time.time()), result, r_multiple, trade_id),
+            )
+            conn.commit()
+        finally:
+            conn.close()
+
+
+def paper_portfolio(symbol: str | None = None, tf: str | None = None) -> dict:
+    cond, args = "", []
+    if symbol:
+        cond += " AND symbol=?"
+        args.append(symbol)
+    if tf:
+        cond += " AND tf=?"
+        args.append(tf)
+    with _lock:
+        conn = _conn()
+        try:
+            conn.row_factory = sqlite3.Row
+            closed = [dict(r) for r in conn.execute(
+                f"SELECT * FROM paper_trades WHERE status='closed'{cond}"
+                f" ORDER BY exit_ts DESC", args).fetchall()]
+            opens = [dict(r) for r in conn.execute(
+                f"SELECT * FROM paper_trades WHERE status='open'{cond}"
+                f" ORDER BY opened_ts DESC", args).fetchall()]
+            wins = sum(1 for t in closed if t["result"] == "win")
+            net_r = round(sum(t["r_multiple"] or 0 for t in closed), 2)
+            n = len(closed)
+            return {
+                "closed_count": n,
+                "open_count": len(opens),
+                "wins": wins,
+                "losses": n - wins,
+                "win_rate": round(wins / n * 100, 1) if n else None,
+                "net_r": net_r,
+                "open": opens[:8],
+                "recent": closed[:12],
+            }
+        finally:
+            conn.close()
 
 
 def log_forecast(symbol: str, tf: str, fc: dict) -> None:

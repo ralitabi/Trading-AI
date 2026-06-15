@@ -913,6 +913,32 @@ body {
 .cal-title { color: var(--text-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cal-when { margin-left: auto; color: var(--text-faint); font-size: 10px; flex: none; }
 
+/* ---- paper trading ---- */
+.pp-net { font-size: 13px; font-weight: 800; font-family: "JetBrains Mono", monospace; }
+.pp-net.pos { color: var(--green); }
+.pp-net.neg { color: var(--red); }
+.pp-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 12px; }
+.pp-stat { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 4px; border: 1px solid var(--border); border-radius: 8px; }
+.pp-stat-val { font-size: 15px; font-weight: 800; color: var(--text); }
+.pp-stat-lbl { font-size: 9px; text-transform: uppercase; letter-spacing: 0.4px; color: var(--text-faint); }
+.pp-section { margin-bottom: 10px; }
+.pp-head { font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-dim); font-weight: 700; margin-bottom: 6px; }
+.pp-row { display: flex; align-items: center; gap: 8px; font-size: 11.5px; padding: 4px 0; border-bottom: 1px solid rgba(140,150,170,0.06); }
+.pp-sym { font-weight: 700; color: var(--text); }
+.pp-tf { color: var(--text-faint); font-weight: 500; font-size: 10px; }
+.pp-dir { font-size: 10px; font-weight: 700; }
+.pp-dir.long { color: var(--green); }
+.pp-dir.short { color: var(--red); }
+.pp-px { color: var(--text-dim); font-family: "JetBrains Mono", monospace; }
+.pp-rr { margin-left: auto; color: var(--text-faint); font-family: "JetBrains Mono", monospace; }
+.pp-result { font-size: 9px; font-weight: 800; padding: 1px 6px; border-radius: 5px; }
+.pp-result.win { color: var(--green); background: rgba(22,199,132,0.14); }
+.pp-result.loss { color: var(--red); background: rgba(234,57,67,0.14); }
+.pp-r { margin-left: auto; font-family: "JetBrains Mono", monospace; font-weight: 700; }
+.pp-r.pos { color: var(--green); }
+.pp-r.neg { color: var(--red); }
+.pp-foot { font-size: 10px; color: var(--text-faint); margin-top: 8px; line-height: 1.3; }
+
 /* ---- gradient call-to-action ---- */
 .full-analysis-btn {
   width: 100%; margin-top: 14px; padding: 12px;

@@ -299,6 +299,34 @@ export interface CalendarResponse {
   events: CalendarEvent[];
 }
 
+export interface PaperTrade {
+  id: number;
+  symbol: string;
+  tf: string;
+  direction: "long" | "short";
+  entry: number;
+  stop: number;
+  target: number;
+  rr: number;
+  opened_ts: number;
+  status: "open" | "closed";
+  exit_price: number | null;
+  exit_ts: number | null;
+  result: "win" | "loss" | null;
+  r_multiple: number | null;
+}
+
+export interface Portfolio {
+  closed_count: number;
+  open_count: number;
+  wins: number;
+  losses: number;
+  win_rate: number | null;
+  net_r: number;
+  open: PaperTrade[];
+  recent: PaperTrade[];
+}
+
 export interface BestWindow {
   start_utc: number;
   end_utc: number;

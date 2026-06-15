@@ -14,8 +14,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from data import cache, calendar, context, crypto, market, orderbook, store
 from data.assets import ASSETS, TIMEFRAMES, get_asset
 from engine import (
-    ai, avgline, forecast, indicators, news, overlays, patterns, scoring, signal, timing, trendcast,
-    trends, volprofile,
+    ai, avgline, forecast, indicators, news, overlays, paper, patterns, scoring, signal, timing,
+    trendcast, trends, volprofile,
 )
 
 TF_SECONDS = {"1m": 60, "5m": 300, "15m": 900, "1h": 3600, "4h": 14400, "1d": 86400, "1wk": 604800}
@@ -157,6 +157,10 @@ def get_signal(symbol: str, tf: str = Query("1h"),
             store.log_forecast(asset["symbol"], tf, next_candle)
         except Exception:
             pass  # forecast logging must never break the live signal
+    try:
+        paper.maybe_open(asset["symbol"], tf, scored["bias"], plan, price_now)
+    except Exception:
+        pass  # paper-trade bookkeeping must never break the live signal
     change_pct = (price_now - data[-2]["close"]) / data[-2]["close"] * 100 if len(data) > 1 else 0.0
 
     return {
@@ -297,6 +301,17 @@ def get_trends(symbol: str, tf: str = Query("1h")):
     except RuntimeError as e:
         raise HTTPException(502, str(e))
     return {"symbol": asset["symbol"], "tf": tf, "trend": trends.analyze(data, TF_SECONDS[tf])}
+
+
+@app.get("/portfolio")
+def get_portfolio(symbol: str | None = Query(None), tf: str | None = Query(None)):
+    """Paper-trading track record — scores open trades against the latest candles
+    then returns the portfolio (net R, win rate, open + recent closed trades)."""
+    try:
+        paper.evaluate(_candles_for)
+    except Exception:
+        pass  # evaluation hiccups must not hide the existing book
+    return store.paper_portfolio(symbol.upper() if symbol else None, tf)
 
 
 @app.get("/news/{symbol}")

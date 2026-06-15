@@ -1,7 +1,7 @@
 import type {
   AccuracyReport, AssetInfo, AvgLineResponse, CalendarResponse, Candle, ForecastHistResponse,
   MarketContextResponse, NewsResponse, OrderBookResponse, OverlaysResponse, PatternsResponse,
-  Prediction, SignalData, TrendcastResponse, TrendResponse, VolProfileResponse,
+  Portfolio, Prediction, SignalData, TrendcastResponse, TrendResponse, VolProfileResponse,
 } from "./types";
 
 // Backend base URL resolution:
@@ -70,6 +70,9 @@ export const fetchNews = (symbol: string) =>
 
 export const fetchCalendar = () =>
   get<CalendarResponse>("/calendar");
+
+export const fetchPortfolio = () =>
+  get<Portfolio>("/portfolio");
 
 export const fetchReport = (symbol?: string, tf?: string) => {
   const q = new URLSearchParams();
