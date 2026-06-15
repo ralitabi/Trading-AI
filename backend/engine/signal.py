@@ -77,6 +77,15 @@ def score(analysis: dict, htf_trend: str | None = None) -> dict:
             htf_note = f"AGAINST higher-timeframe {htf_trend}trend — countertrend, low quality"
 
     confidence = int(max(5, min(92, round(confidence))))
+
+    # Calibration floor — abstain on low-conviction directional calls. In replay
+    # across BTC/ETH/SPX/EURUSD, calls below ~60 confidence hit BELOW 50% (a
+    # coin flip or worse), dragging accuracy down; calls at/above 60 clear 51%+.
+    # So committing to them costs accuracy — return "no edge" instead.
+    CONF_FLOOR = 60
+    if bias != "neutral" and confidence < CONF_FLOOR:
+        bias = "neutral"
+
     if bias == "neutral":
         confidence = min(confidence, 48)
     return {"bias": bias, "confidence": confidence, "htf_note": htf_note}
