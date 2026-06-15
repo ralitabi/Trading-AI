@@ -87,12 +87,14 @@ interface Props {
   avgLine?: AvgLinePoint[];
   /** Candlestick patterns + divergences, drawn as labelled markers */
   patterns?: PatternItem[];
+  /** A chart pattern's outline to trace (the most significant one) */
+  chartPattern?: { outline: { time: number; price: number }[]; direction: string } | null;
   onTick?: (price: number) => void;
   /** Called after a WebSocket reconnect — history may have gaps, so refetch */
   onResync?: () => void;
 }
 
-export default function Chart({ candles, live, tf, levels, plan, forecast, forecastHistory, overlays, avgLine, patterns, onTick, onResync }: Props) {
+export default function Chart({ candles, live, tf, levels, plan, forecast, forecastHistory, overlays, avgLine, patterns, chartPattern, onTick, onResync }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const candleSeriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
@@ -102,6 +104,7 @@ export default function Chart({ candles, live, tf, levels, plan, forecast, forec
   const avgSeriesRef = useRef<ISeriesApi<"Line"> | null>(null);
   const avgProjSeriesRef = useRef<ISeriesApi<"Line"> | null>(null);
   const markersRef = useRef<ISeriesMarkersPluginApi<Time> | null>(null);
+  const patternSeriesRef = useRef<ISeriesApi<"Line"> | null>(null);
   const overlayRef = useRef<Map<string, ISeriesApi<"Line">>>(new Map());
   const lastBarRef = useRef<Bar | null>(null);
   const lastTickNotify = useRef(0);
@@ -181,6 +184,12 @@ export default function Chart({ candles, live, tf, levels, plan, forecast, forec
       color: "#ff8a1f", lineWidth: 2, lineStyle: LineStyle.Dashed,
       priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false,
     });
+    // chart-pattern outline (head & shoulders / double top / triangle) traced as
+    // a dashed line through the defining swing pivots.
+    const patternSeries = chart.addSeries(LineSeries, {
+      color: "#9aa4b8", lineWidth: 2, lineStyle: LineStyle.Dashed,
+      priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false,
+    });
 
     chartRef.current = chart;
     candleSeriesRef.current = candleSeries;
@@ -189,6 +198,7 @@ export default function Chart({ candles, live, tf, levels, plan, forecast, forec
     histSeriesRef.current = histSeries;
     avgSeriesRef.current = avgSeries;
     avgProjSeriesRef.current = avgProjSeries;
+    patternSeriesRef.current = patternSeries;
     markersRef.current = createSeriesMarkers(candleSeries, []);
     return () => chart.remove();
   }, []);
@@ -210,6 +220,20 @@ export default function Chart({ candles, live, tf, levels, plan, forecast, forec
       [...anchor, ...projected].map((p) => ({ time: p.time as UTCTimestamp, value: p.value })),
     );
   }, [avgLine]);
+
+  // trace the most significant chart pattern's outline through its swing pivots
+  useEffect(() => {
+    const series = patternSeriesRef.current;
+    if (!series) return;
+    const pts = chartPattern?.outline ?? [];
+    const color = chartPattern?.direction === "bullish" ? "#16c784"
+      : chartPattern?.direction === "bearish" ? "#ea3943" : "#f5a623";
+    series.applyOptions({ color });
+    series.setData(
+      pts.slice().sort((a, b) => a.time - b.time)
+        .map((p) => ({ time: p.time as UTCTimestamp, value: p.price })),
+    );
+  }, [chartPattern]);
 
   // candlestick patterns + divergences as labelled markers on the price series
   useEffect(() => {

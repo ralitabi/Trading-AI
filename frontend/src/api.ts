@@ -1,7 +1,8 @@
 import type {
-  AccuracyReport, AssetInfo, AvgLineResponse, CalendarResponse, Candle, ForecastHistResponse,
-  MarketContextResponse, NewsResponse, OrderBookResponse, OverlaysResponse, PatternsResponse,
-  Portfolio, Prediction, SignalData, TrendcastResponse, TrendResponse, VolProfileResponse,
+  AccuracyReport, AssetInfo, AvgLineResponse, CalendarResponse, Candle, ChartPatternsResponse,
+  ForecastHistResponse, MarketContextResponse, NewsResponse, OrderBookResponse, OverlaysResponse,
+  PatternsResponse, Portfolio, Prediction, SignalData, TrendcastResponse, TrendResponse,
+  VolProfileResponse,
 } from "./types";
 
 // Backend base URL resolution:
@@ -55,6 +56,9 @@ export const fetchTrendcast = (symbol: string, tf: string) =>
 
 export const fetchPatterns = (symbol: string, tf: string) =>
   get<PatternsResponse>(`/patterns/${symbol}?tf=${tf}`);
+
+export const fetchChartPatterns = (symbol: string, tf: string) =>
+  get<ChartPatternsResponse>(`/chartpatterns/${symbol}?tf=${tf}`);
 
 export const fetchContext = (symbol: string) =>
   get<MarketContextResponse>(`/context/${symbol}`);

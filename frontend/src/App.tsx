@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  fetchAssets, fetchAvgLine, fetchCalendar, fetchCandles, fetchContext, fetchForecastHistory,
-  fetchNews, fetchOrderBook, fetchOverlays, fetchPatterns, fetchPortfolio, fetchPrediction,
-  fetchSignal, fetchTrendcast, fetchVolProfile,
+  fetchAssets, fetchAvgLine, fetchCalendar, fetchCandles, fetchChartPatterns, fetchContext,
+  fetchForecastHistory, fetchNews, fetchOrderBook, fetchOverlays, fetchPatterns, fetchPortfolio,
+  fetchPrediction, fetchSignal, fetchTrendcast, fetchVolProfile,
 } from "./api";
 import type {
-  AssetInfo, AvgLinePoint, CalendarEvent, Candle, ForecastHistItem, MarketContextResponse,
-  NewsResponse, OrderBookResponse, OverlaysResponse, PatternItem, PatternsResponse, Portfolio,
-  Prediction, SignalData, TrendForecast as TrendForecastData, VolProfileResponse,
+  AssetInfo, AvgLinePoint, CalendarEvent, Candle, ChartPattern, ForecastHistItem,
+  MarketContextResponse, NewsResponse, OrderBookResponse, OverlaysResponse, PatternItem,
+  PatternsResponse, Portfolio, Prediction, SignalData, TrendForecast as TrendForecastData,
+  VolProfileResponse,
 } from "./types";
 import Chart, { type LiveFeed, type OverlaySeries } from "./components/Chart";
 import AssetPicker from "./components/AssetPicker";
@@ -18,6 +19,7 @@ import IndicatorPanel from "./components/IndicatorPanel";
 import TradeSetup from "./components/TradeSetup";
 import TrendForecast from "./components/TrendForecast";
 import PatternsPanel from "./components/PatternsPanel";
+import ChartPatternsPanel from "./components/ChartPatternsPanel";
 import MarketContext from "./components/MarketContext";
 import VolumeProfile from "./components/VolumeProfile";
 import OrderBook from "./components/OrderBook";
@@ -104,6 +106,7 @@ function Dashboard() {
   const indCtrl = useIndicators();
   const [trendcast, setTrendcast] = useState<TrendForecastData | null>(null);
   const [patterns, setPatterns] = useState<PatternsResponse | null>(null);
+  const [chartPatterns, setChartPatterns] = useState<ChartPattern[]>([]);
   const [marketCtx, setMarketCtx] = useState<MarketContextResponse | null>(null);
   const [volProfile, setVolProfile] = useState<VolProfileResponse | null>(null);
   const [orderBook, setOrderBook] = useState<OrderBookResponse | null>(null);
@@ -357,6 +360,16 @@ function Dashboard() {
     }
   }, []);
 
+  const loadChartPatterns = useCallback(async (sym: string, timeframe: string) => {
+    const key = `${sym}|${timeframe}`;
+    try {
+      const r = await fetchChartPatterns(sym, timeframe);
+      if (viewKey.current === key) setChartPatterns(r.patterns);
+    } catch {
+      /* chart patterns are supplementary */
+    }
+  }, []);
+
   const loadPrediction = useCallback(async (sym: string, timeframe: string) => {
     const key = `${sym}|${timeframe}`;
     try {
@@ -449,15 +462,19 @@ function Dashboard() {
   useEffect(() => {
     if (!showPatterns) {
       setPatterns(null);
+      setChartPatterns([]);
       return;
     }
     loadPatterns(symbol, tf);
+    loadChartPatterns(symbol, tf);
     const ms = INTRADAY.has(tf) ? 10_000 : 30_000;
     const id = setInterval(() => {
-      if (!document.hidden) loadPatterns(symbol, tf);
+      if (document.hidden) return;
+      loadPatterns(symbol, tf);
+      loadChartPatterns(symbol, tf);
     }, ms);
     return () => clearInterval(id);
-  }, [showPatterns, symbol, tf, loadPatterns]);
+  }, [showPatterns, symbol, tf, loadPatterns, loadChartPatterns]);
 
   // Market context (crypto only): Fear & Greed + funding rate, refreshed slowly.
   useEffect(() => {
@@ -718,6 +735,7 @@ function Dashboard() {
             overlays={overlaySeries}
             avgLine={showAvgLine ? avgLine : undefined}
             patterns={showPatterns && patterns ? [...patterns.candlesticks, ...patterns.divergences] : undefined}
+            chartPattern={showPatterns && chartPatterns.length > 0 ? chartPatterns[0] : null}
             onTick={onTick}
             onResync={onResync}
           />
@@ -746,6 +764,7 @@ function Dashboard() {
           {signal && <TradeSetup s={signal} />}
           {trendcast && <TrendForecast f={trendcast} />}
           {showPatterns && patterns && <PatternsPanel p={patterns} />}
+          {showPatterns && chartPatterns.length > 0 && <ChartPatternsPanel patterns={chartPatterns} />}
           {marketCtx && <MarketContext c={marketCtx} />}
           {orderBook && <OrderBook o={orderBook} />}
           {volProfile && <VolumeProfile p={volProfile} />}

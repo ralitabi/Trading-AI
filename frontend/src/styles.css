@@ -830,6 +830,26 @@ body {
 .pat-empty { font-size: 12px; color: var(--text-dim); }
 .pat-foot { font-size: 10px; color: var(--text-faint); margin-top: 9px; line-height: 1.3; }
 
+/* ---- chart patterns (H&S / double top / triangle) ---- */
+.cpat-list { display: flex; flex-direction: column; gap: 8px; }
+.cpat-row { border: 1px solid var(--border); border-left-width: 3px; border-radius: 8px; padding: 8px 10px; border-left-color: var(--text-faint); }
+.cpat-row.cpat-bullish { border-left-color: var(--green); }
+.cpat-row.cpat-bearish { border-left-color: var(--red); }
+.cpat-row.cpat-neutral { border-left-color: var(--amber); }
+.cpat-top { display: flex; align-items: center; gap: 8px; }
+.cpat-icon { font-size: 11px; }
+.cpat-row.cpat-bullish .cpat-icon { color: var(--green); }
+.cpat-row.cpat-bearish .cpat-icon { color: var(--red); }
+.cpat-row.cpat-neutral .cpat-icon { color: var(--amber); }
+.cpat-name { font-size: 12px; font-weight: 700; color: var(--text); }
+.cpat-badge { font-size: 8px; text-transform: uppercase; letter-spacing: 0.4px; padding: 1px 6px; border-radius: 5px; font-weight: 700; }
+.cpat-badge.confirmed { color: var(--green); background: rgba(22,199,132,0.16); }
+.cpat-badge.forming { color: var(--text-dim); background: rgba(140,150,170,0.12); }
+.cpat-conf { margin-left: auto; font-size: 11px; font-weight: 700; color: var(--text-dim); font-family: "JetBrains Mono", monospace; }
+.cpat-levels { display: flex; gap: 14px; margin-top: 5px; font-size: 11px; color: var(--text-dim); }
+.cpat-levels b { color: var(--text); font-family: "JetBrains Mono", monospace; }
+.cpat-foot { font-size: 10px; color: var(--text-faint); margin-top: 9px; line-height: 1.3; }
+
 /* ---- market context (fear & greed + funding) ---- */
 .ctx-label { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; }
 .ctx-fg { margin-bottom: 14px; }

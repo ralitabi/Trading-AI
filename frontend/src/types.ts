@@ -327,6 +327,27 @@ export interface Portfolio {
   recent: PaperTrade[];
 }
 
+export interface ChartPatternPoint {
+  time: number;
+  price: number;
+}
+
+export interface ChartPattern {
+  name: string;
+  direction: "bullish" | "bearish" | "neutral";
+  outline: ChartPatternPoint[];
+  neckline: number;
+  target: number | null;
+  confirmed: boolean;
+  confidence: number;
+}
+
+export interface ChartPatternsResponse {
+  symbol: string;
+  tf: string;
+  patterns: ChartPattern[];
+}
+
 export interface BestWindow {
   start_utc: number;
   end_utc: number;

@@ -83,7 +83,7 @@ export default function IndicatorMenu({
             </span>
             <span className="im-special-text">
               <b>Patterns &amp; divergences</b>
-              <span className="im-special-sub">candlestick patterns (engulfing, hammer, doji…) and RSI/MACD divergences, marked on the chart with a summary panel</span>
+              <span className="im-special-sub">candlestick patterns, RSI/MACD divergences, and chart patterns (head &amp; shoulders, double top/bottom, triangles) — marked on the chart with summary panels</span>
             </span>
           </label>
 
