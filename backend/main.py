@@ -11,10 +11,11 @@ load_dotenv()
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 
-from data import cache, context, crypto, market, store
+from data import cache, context, crypto, market, orderbook, store
 from data.assets import ASSETS, TIMEFRAMES, get_asset
 from engine import (
-    ai, avgline, forecast, indicators, overlays, patterns, scoring, signal, timing, trendcast, trends,
+    ai, avgline, forecast, indicators, overlays, patterns, scoring, signal, timing, trendcast,
+    trends, volprofile,
 )
 
 TF_SECONDS = {"1m": 60, "5m": 300, "15m": 900, "1h": 3600, "4h": 14400, "1d": 86400, "1wk": 604800}
@@ -296,6 +297,36 @@ def get_trends(symbol: str, tf: str = Query("1h")):
     except RuntimeError as e:
         raise HTTPException(502, str(e))
     return {"symbol": asset["symbol"], "tf": tf, "trend": trends.analyze(data, TF_SECONDS[tf])}
+
+
+@app.get("/volprofile/{symbol}")
+def get_volprofile(symbol: str, tf: str = Query("1h")):
+    """Volume profile — volume traded per price level, with POC + value area."""
+    try:
+        asset = get_asset(symbol)
+        data = _candles_for(symbol, tf, 300)
+    except KeyError as e:
+        raise HTTPException(404, str(e))
+    except RuntimeError as e:
+        raise HTTPException(502, str(e))
+    key = f"vp:{asset['symbol']}:{tf}"
+    vp = cache.get(key)
+    if vp is None:
+        vp = volprofile.build(data)
+        cache.put(key, vp, ttl=cache.ttl_for(tf))
+    return {"symbol": asset["symbol"], "tf": tf, "profile": vp}
+
+
+@app.get("/orderbook/{symbol}")
+def get_orderbook(symbol: str):
+    """Live order-book depth snapshot (crypto only) — pressure + top levels."""
+    try:
+        asset = get_asset(symbol)
+    except KeyError as e:
+        raise HTTPException(404, str(e))
+    if asset["source"] != "binance":
+        return {"symbol": asset["symbol"], "book": None}
+    return {"symbol": asset["symbol"], "book": orderbook.depth(asset["symbol"])}
 
 
 @app.get("/context/{symbol}")

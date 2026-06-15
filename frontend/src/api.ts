@@ -1,6 +1,7 @@
 import type {
   AccuracyReport, AssetInfo, AvgLineResponse, Candle, ForecastHistResponse, MarketContextResponse,
-  OverlaysResponse, PatternsResponse, Prediction, SignalData, TrendcastResponse, TrendResponse,
+  OrderBookResponse, OverlaysResponse, PatternsResponse, Prediction, SignalData, TrendcastResponse,
+  TrendResponse, VolProfileResponse,
 } from "./types";
 
 // Backend base URL resolution:
@@ -57,6 +58,12 @@ export const fetchPatterns = (symbol: string, tf: string) =>
 
 export const fetchContext = (symbol: string) =>
   get<MarketContextResponse>(`/context/${symbol}`);
+
+export const fetchVolProfile = (symbol: string, tf: string) =>
+  get<VolProfileResponse>(`/volprofile/${symbol}?tf=${tf}`);
+
+export const fetchOrderBook = (symbol: string) =>
+  get<OrderBookResponse>(`/orderbook/${symbol}`);
 
 export const fetchReport = (symbol?: string, tf?: string) => {
   const q = new URLSearchParams();

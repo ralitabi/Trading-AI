@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  fetchAssets, fetchAvgLine, fetchCandles, fetchContext, fetchForecastHistory, fetchOverlays,
-  fetchPatterns, fetchPrediction, fetchSignal, fetchTrendcast,
+  fetchAssets, fetchAvgLine, fetchCandles, fetchContext, fetchForecastHistory, fetchOrderBook,
+  fetchOverlays, fetchPatterns, fetchPrediction, fetchSignal, fetchTrendcast, fetchVolProfile,
 } from "./api";
 import type {
-  AssetInfo, AvgLinePoint, Candle, ForecastHistItem, MarketContextResponse, OverlaysResponse,
-  PatternItem, PatternsResponse, Prediction, SignalData, TrendForecast as TrendForecastData,
+  AssetInfo, AvgLinePoint, Candle, ForecastHistItem, MarketContextResponse, OrderBookResponse,
+  OverlaysResponse, PatternItem, PatternsResponse, Prediction, SignalData,
+  TrendForecast as TrendForecastData, VolProfileResponse,
 } from "./types";
 import Chart, { type LiveFeed, type OverlaySeries } from "./components/Chart";
 import AssetPicker from "./components/AssetPicker";
@@ -17,6 +18,8 @@ import TradeSetup from "./components/TradeSetup";
 import TrendForecast from "./components/TrendForecast";
 import PatternsPanel from "./components/PatternsPanel";
 import MarketContext from "./components/MarketContext";
+import VolumeProfile from "./components/VolumeProfile";
+import OrderBook from "./components/OrderBook";
 import AICard from "./components/AICard";
 import ReportPage from "./components/ReportPage";
 import { useIndicators } from "./useIndicators";
@@ -99,6 +102,8 @@ function Dashboard() {
   const [trendcast, setTrendcast] = useState<TrendForecastData | null>(null);
   const [patterns, setPatterns] = useState<PatternsResponse | null>(null);
   const [marketCtx, setMarketCtx] = useState<MarketContextResponse | null>(null);
+  const [volProfile, setVolProfile] = useState<VolProfileResponse | null>(null);
+  const [orderBook, setOrderBook] = useState<OrderBookResponse | null>(null);
   const [showPatterns, setShowPatterns] = useState(
     () => localStorage.getItem("trend-patterns") !== "false",
   );
@@ -301,6 +306,25 @@ function Dashboard() {
     }
   }, []);
 
+  const loadVolProfile = useCallback(async (sym: string, timeframe: string) => {
+    const key = `${sym}|${timeframe}`;
+    try {
+      const r = await fetchVolProfile(sym, timeframe);
+      if (viewKey.current === key) setVolProfile(r);
+    } catch {
+      /* volume profile is supplementary */
+    }
+  }, []);
+
+  const loadOrderBook = useCallback(async (sym: string) => {
+    try {
+      const r = await fetchOrderBook(sym);
+      if (viewKey.current.split("|")[0] === sym) setOrderBook(r);
+    } catch {
+      /* order book is supplementary */
+    }
+  }, []);
+
   const loadPrediction = useCallback(async (sym: string, timeframe: string) => {
     const key = `${sym}|${timeframe}`;
     try {
@@ -415,6 +439,29 @@ function Dashboard() {
     }, 60_000);
     return () => clearInterval(id);
   }, [symbol, isBinance, loadContext]);
+
+  // Volume profile (all assets): recompute on a candle-paced cadence.
+  useEffect(() => {
+    loadVolProfile(symbol, tf);
+    const ms = INTRADAY.has(tf) ? 12_000 : 40_000;
+    const id = setInterval(() => {
+      if (!document.hidden) loadVolProfile(symbol, tf);
+    }, ms);
+    return () => clearInterval(id);
+  }, [symbol, tf, loadVolProfile]);
+
+  // Order book (crypto only): fast snapshot poll — the book moves quickly.
+  useEffect(() => {
+    if (!isBinance) {
+      setOrderBook(null);
+      return;
+    }
+    loadOrderBook(symbol);
+    const id = setInterval(() => {
+      if (!document.hidden) loadOrderBook(symbol);
+    }, 5000);
+    return () => clearInterval(id);
+  }, [symbol, isBinance, loadOrderBook]);
 
   // Toggling indicators on/off ⇒ immediately re-score the signal.
   useEffect(() => {
@@ -641,6 +688,8 @@ function Dashboard() {
           {trendcast && <TrendForecast f={trendcast} />}
           {showPatterns && patterns && <PatternsPanel p={patterns} />}
           {marketCtx && <MarketContext c={marketCtx} />}
+          {orderBook && <OrderBook o={orderBook} />}
+          {volProfile && <VolumeProfile p={volProfile} />}
           {prediction && <AICard p={prediction} />}
         </aside>
       </main>

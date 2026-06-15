@@ -853,6 +853,37 @@ body {
 .ctx-fund-next { font-size: 11px; color: var(--text-dim); }
 .ctx-fund-next b { color: var(--text); font-family: "JetBrains Mono", monospace; }
 
+/* ---- volume profile ---- */
+.vp-rows { display: flex; flex-direction: column; gap: 2px; }
+.vp-row { display: flex; align-items: center; gap: 8px; height: 14px; }
+.vp-price { font-size: 9px; color: var(--text-faint); font-family: "JetBrains Mono", monospace; width: 64px; text-align: right; flex: none; }
+.vp-bar { flex: 1; height: 9px; background: rgba(140,150,170,0.06); border-radius: 3px; overflow: hidden; }
+.vp-fill { display: block; height: 100%; background: rgba(46,123,255,0.45); border-radius: 3px; }
+.vp-row.va .vp-fill { background: rgba(46,123,255,0.7); }
+.vp-row.poc .vp-fill { background: var(--amber); }
+.vp-row.poc .vp-price { color: var(--amber); font-weight: 700; }
+.vp-foot { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 10px; font-size: 11px; color: var(--text-dim); }
+.vp-foot b { color: var(--text); font-family: "JetBrains Mono", monospace; }
+.vp-poc-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--amber); margin-right: 4px; vertical-align: middle; }
+
+/* ---- order book ---- */
+.ob-tag { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 6px; }
+.ob-tag.buy { color: var(--green); background: rgba(22,199,132,0.14); }
+.ob-tag.sell { color: var(--red); background: rgba(234,57,67,0.14); }
+.ob-imbar { display: flex; height: 18px; border-radius: 6px; overflow: hidden; margin-bottom: 10px; font-size: 10px; font-weight: 700; }
+.ob-bidbar { background: rgba(22,199,132,0.5); color: #04130c; display: flex; align-items: center; padding-left: 7px; min-width: 0; }
+.ob-askbar { background: rgba(234,57,67,0.5); color: #1a0405; display: flex; align-items: center; justify-content: flex-end; padding-right: 7px; min-width: 0; }
+.ob-ladder { display: flex; flex-direction: column; gap: 1px; }
+.ob-l { position: relative; display: flex; align-items: center; height: 18px; font-size: 11px; font-family: "JetBrains Mono", monospace; padding: 0 8px; }
+.ob-q { position: absolute; right: 0; top: 0; height: 100%; }
+.ob-l.ask .ob-q { background: rgba(234,57,67,0.16); }
+.ob-l.bid .ob-q { background: rgba(22,199,132,0.16); }
+.ob-price { position: relative; z-index: 1; }
+.ob-l.ask .ob-price { color: var(--red); }
+.ob-l.bid .ob-price { color: var(--green); }
+.ob-qty { position: relative; z-index: 1; margin-left: auto; color: var(--text-dim); }
+.ob-mid { font-size: 10px; color: var(--text-faint); text-align: center; padding: 5px 0; border-block: 1px dashed var(--border); margin: 3px 0; }
+
 /* ---- gradient call-to-action ---- */
 .full-analysis-btn {
   width: 100%; margin-top: 14px; padding: 12px;

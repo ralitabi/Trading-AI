@@ -227,6 +227,46 @@ export interface MarketContextResponse {
   funding: Funding | null;
 }
 
+export interface VolBucket {
+  price: number;
+  volume: number;
+}
+
+export interface VolProfile {
+  bins: VolBucket[];
+  poc: number;
+  value_area_low: number;
+  value_area_high: number;
+  max_volume: number;
+}
+
+export interface VolProfileResponse {
+  symbol: string;
+  tf: string;
+  profile: VolProfile | null;
+}
+
+export interface OrderLevel {
+  price: number;
+  qty: number;
+}
+
+export interface OrderBook {
+  mid: number;
+  spread: number;
+  spread_pct: number;
+  bid_volume: number;
+  ask_volume: number;
+  imbalance_pct: number;
+  bids: OrderLevel[];
+  asks: OrderLevel[];
+}
+
+export interface OrderBookResponse {
+  symbol: string;
+  book: OrderBook | null;
+}
+
 export interface BestWindow {
   start_utc: number;
   end_utc: number;
