@@ -1,30 +1,25 @@
-"""Prediction history — every fresh prediction is logged to SQLite.
+"""Prediction history — every fresh prediction is logged to the database.
 
 This is the accountability layer: without a record of what the system said
-and when, "accuracy" is unmeasurable. Phase 3 backtesting scores these rows
-against what the market actually did next.
+and when, "accuracy" is unmeasurable. Scoring grades these rows against what
+the market actually did next.
+
+The backend is SQLite locally and a durable Turso/libSQL database in production
+(see data/db.py) — same schema, same SQL, swapped underneath.
 """
-import os
 import sqlite3
-import tempfile
 import time
 from threading import Lock
 
-# On serverless (Vercel sets VERCEL=1) the app dir is read-only — use /tmp.
-# PREDICTIONS_DB overrides if you want a persistent disk path.
-if os.environ.get("PREDICTIONS_DB"):
-    _DB = os.environ["PREDICTIONS_DB"]
-elif os.environ.get("VERCEL"):
-    _DB = os.path.join(tempfile.gettempdir(), "predictions.db")
-else:
-    _DB = os.path.join(os.path.dirname(os.path.dirname(__file__)), "predictions.db")
+from data import db
+
 _lock = Lock()
+_schema_lock = Lock()
+_schema_ready = False
 
 
-def _conn() -> sqlite3.Connection:
-    # timeout: wait up to 5s for a lock instead of instantly raising
-    # "database is locked" when serverless invocations write concurrently.
-    conn = sqlite3.connect(_DB, timeout=5)
+def _create_schema(conn) -> None:
+    """Idempotent — safe to call on every connect (cheap for SQLite)."""
     conn.execute(
         """CREATE TABLE IF NOT EXISTS predictions (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -40,7 +35,7 @@ def _conn() -> sqlite3.Connection:
         )"""
     )
     # outcome columns, added after the fact — migrate older DBs in place
-    cols = {row[1] for row in conn.execute("PRAGMA table_info(predictions)")}
+    cols = {row["name"] for row in conn.execute("PRAGMA table_info(predictions)")}
     for col, typ in (
         ("actual_price", "REAL"),
         ("actual_direction", "TEXT"),
@@ -81,6 +76,22 @@ def _conn() -> sqlite3.Connection:
             r_multiple REAL
         )"""
     )
+    conn.commit()
+
+
+def _conn():
+    conn = db.connect()
+    if isinstance(conn, sqlite3.Connection):
+        _create_schema(conn)  # cheap & idempotent for the local file backend
+    else:
+        # Remote (libSQL): every CREATE/PRAGMA is an HTTP round-trip, so run the
+        # schema exactly once per process instead of on every connect.
+        global _schema_ready
+        if not _schema_ready:
+            with _schema_lock:
+                if not _schema_ready:
+                    _create_schema(conn)
+                    _schema_ready = True
     return conn
 
 
@@ -115,7 +126,6 @@ def open_trades() -> list[dict]:
     with _lock:
         conn = _conn()
         try:
-            conn.row_factory = sqlite3.Row
             return [dict(r) for r in conn.execute(
                 "SELECT * FROM paper_trades WHERE status='open'").fetchall()]
         finally:
@@ -147,7 +157,6 @@ def paper_portfolio(symbol: str | None = None, tf: str | None = None) -> dict:
     with _lock:
         conn = _conn()
         try:
-            conn.row_factory = sqlite3.Row
             closed = [dict(r) for r in conn.execute(
                 f"SELECT * FROM paper_trades WHERE status='closed'{cond}"
                 f" ORDER BY exit_ts DESC", args).fetchall()]
@@ -194,7 +203,6 @@ def forecast_history(symbol: str, tf: str, limit: int = 300) -> list[dict]:
     with _lock:
         conn = _conn()
         try:
-            conn.row_factory = sqlite3.Row
             rows = conn.execute(
                 "SELECT target_time, open, high, low, close, direction FROM forecasts"
                 " WHERE symbol = ? AND tf = ? ORDER BY target_time DESC LIMIT ?",
@@ -228,7 +236,6 @@ def unevaluated() -> list[dict]:
     with _lock:
         conn = _conn()
         try:
-            conn.row_factory = sqlite3.Row
             rows = conn.execute("SELECT * FROM predictions WHERE evaluated_at IS NULL").fetchall()
             return [dict(r) for r in rows]
         finally:
@@ -262,7 +269,6 @@ def report(symbol: str | None = None, tf: str | None = None) -> dict:
     with _lock:
         conn = _conn()
         try:
-            conn.row_factory = sqlite3.Row
             total = conn.execute(
                 f"SELECT COUNT(*) c FROM predictions WHERE 1=1{cond}", args).fetchone()["c"]
             pending = conn.execute(
@@ -316,7 +322,6 @@ def history(symbol: str, tf: str | None = None, limit: int = 100) -> list[dict]:
     with _lock:
         conn = _conn()
         try:
-            conn.row_factory = sqlite3.Row
             q = "SELECT * FROM predictions WHERE symbol = ?"
             args: list = [symbol]
             if tf:

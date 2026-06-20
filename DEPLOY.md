@@ -38,12 +38,43 @@ Two pieces:
 
 ---
 
+## 3. Durable history (Turso / libSQL) — keeps the accuracy report alive
+
+By default the app writes to a local `predictions.db` (SQLite). On serverless
+(Vercel) and Render's free tier that file lives in ephemeral storage, so the
+**accuracy report and paper-trading track record reset on every cold start /
+redeploy** — which guts the self-scoring record that's the whole point.
+
+Point the app at a free **[Turso](https://turso.tech)** (libSQL) database and
+that history persists durably. No code change — same schema, same queries:
+
+1. Install the CLI and sign up (free): `curl -sSfL https://get.tur.so/install.sh | bash`, then `turso auth signup`.
+2. Create a database and a token:
+   ```bash
+   turso db create trading-ai
+   turso db show trading-ai --url        # → libsql://trading-ai-<org>.turso.io
+   turso db tokens create trading-ai     # → the auth token
+   ```
+3. Add these as environment variables (Vercel project → Settings → Environment
+   Variables, or Render → Environment), then redeploy:
+   - `TURSO_DATABASE_URL` = the `libsql://…` URL
+   - `TURSO_AUTH_TOKEN`   = the token
+
+That's it. On boot the app creates the schema in Turso and every prediction,
+forecast and paper trade is written there instead of `/tmp`. If the vars are
+absent or the database is unreachable, it transparently falls back to local
+SQLite, so nothing breaks. (`LIBSQL_URL` / `LIBSQL_AUTH_TOKEN` work as aliases.)
+
+---
+
 ## Updating later
 Push to `main` → both Render and Vercel auto-redeploy.
 
 ## Free-tier notes
 - Render free sleeps after 15 min idle; first request after wake is slow (~50s).
-- `predictions.db` (SQLite) resets when Render redeploys/sleeps. The live analysis,
-  forecasts, trend, and accuracy *reconstruction* all compute from candles and are
-  unaffected; only the forward-logged prediction history resets. For permanent
-  history, add a Render persistent disk (paid) or a Supabase Postgres DB.
+- Without a durable database (see **§3**), `predictions.db` (SQLite) resets when
+  the host redeploys/sleeps or a serverless function cold-starts. The live
+  analysis, forecasts, trend, and accuracy *reconstruction* all compute from
+  candles and are unaffected; only the forward-logged prediction history,
+  paper-trading book, and the backtest's logged inputs reset. Set
+  `TURSO_DATABASE_URL` + `TURSO_AUTH_TOKEN` to keep them permanently.

@@ -8,3 +8,4 @@ openai>=1.50
 anthropic>=0.40
 feedparser>=6.0
 python-dotenv>=1.0
+libsql-client>=0.3.1  # durable Turso/libSQL store (optional; falls back to SQLite)
