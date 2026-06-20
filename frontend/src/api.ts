@@ -1,8 +1,8 @@
 import type {
-  AccuracyReport, AssetInfo, AvgLineResponse, CalendarResponse, Candle, ChartPatternsResponse,
-  ForecastHistResponse, MarketContextResponse, NewsResponse, OrderBookResponse, OverlaysResponse,
-  PatternsResponse, Portfolio, Prediction, SignalData, TrendcastResponse, TrendResponse,
-  VolProfileResponse,
+  AccuracyReport, AssetInfo, AvgLineResponse, BacktestResponse, CalendarResponse, Candle,
+  ChartPatternsResponse, ForecastHistResponse, MarketContextResponse, NewsResponse,
+  OrderBookResponse, OverlaysResponse, PatternsResponse, Portfolio, Prediction, SignalData,
+  TrendcastResponse, TrendResponse, VolProfileResponse,
 } from "./types";
 
 // Backend base URL resolution:
@@ -77,6 +77,9 @@ export const fetchCalendar = () =>
 
 export const fetchPortfolio = () =>
   get<Portfolio>("/portfolio");
+
+export const fetchBacktest = (symbol: string, tf: string) =>
+  get<BacktestResponse>(`/backtest/${symbol}?tf=${tf}`);
 
 export const fetchReport = (symbol?: string, tf?: string) => {
   const q = new URLSearchParams();

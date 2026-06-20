@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { fetchAssets, fetchForecastHistory, fetchReport, fetchTrends } from "../api";
-import type { AccuracyReport, AssetInfo, ForecastSummary, TrendInfo } from "../types";
+import { fetchAssets, fetchBacktest, fetchForecastHistory, fetchReport, fetchTrends } from "../api";
+import type { AccuracyReport, AssetInfo, BacktestResult, ForecastSummary, TrendInfo } from "../types";
+import BacktestPanel from "./BacktestPanel";
 
 const TIMEFRAMES = ["1m", "5m", "15m", "1h", "4h", "1d", "1wk"];
 
@@ -35,6 +36,8 @@ export default function ReportPage({ symbol: pSymbol, tf: pTf }: { symbol?: stri
   const [report, setReport] = useState<AccuracyReport | null>(null);
   const [quality, setQuality] = useState<ForecastSummary | null>(null);
   const [qualitySym, setQualitySym] = useState<string>("");
+  const [backtest, setBacktest] = useState<BacktestResult | null>(null);
+  const [backtestSym, setBacktestSym] = useState<string>("");
   const [trend, setTrend] = useState<TrendInfo | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [refreshedAt, setRefreshedAt] = useState<string>("");
@@ -86,6 +89,13 @@ export default function ReportPage({ symbol: pSymbol, tf: pTf }: { symbol?: stri
       setQualitySym(`${sym} · ${tf}`);
     } catch {
       setQuality(null);
+    }
+    try {
+      const b = await fetchBacktest(sym, tf);
+      setBacktest(b.backtest);
+      setBacktestSym(`${sym} · ${tf}`);
+    } catch {
+      setBacktest(null);
     } finally {
       busyQ.current = false;
     }
@@ -165,6 +175,8 @@ export default function ReportPage({ symbol: pSymbol, tf: pTf }: { symbol?: stri
           calls per row. Let the system run; the truth accumulates.
         </div>
       )}
+
+      {backtest && <BacktestPanel bt={backtest} label={backtestSym} />}
 
       {trend && (
         <>

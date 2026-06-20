@@ -14,7 +14,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from data import cache, calendar, context, crypto, market, orderbook, store
 from data.assets import ASSETS, TIMEFRAMES, get_asset
 from engine import (
-    ai, avgline, chartpatterns, forecast, indicators, news, overlays, paper, patterns, scoring,
+    ai, avgline, backtest, chartpatterns, forecast, indicators, news, overlays, paper, patterns, scoring,
     signal, timing, trendcast, trends, volprofile,
 )
 
@@ -425,6 +425,25 @@ def get_trendcast(symbol: str, tf: str = Query("1h")):
     except RuntimeError as e:
         raise HTTPException(502, str(e))
     return {"symbol": asset["symbol"], "tf": tf, "forecast": trendcast.project(data, TF_SECONDS[tf])}
+
+
+@app.get("/backtest/{symbol}")
+def get_backtest(symbol: str, tf: str = Query("1h")):
+    """Replay the live signal + ATR plan over history → win rate, net R, profit
+    factor, max drawdown and a cumulative-R equity curve. Cached per market/tf."""
+    try:
+        asset = get_asset(symbol)
+        data = _candles_for(symbol, tf, 1000)
+    except KeyError as e:
+        raise HTTPException(404, str(e))
+    except RuntimeError as e:
+        raise HTTPException(502, str(e))
+    key = f"backtest:{asset['symbol']}:{tf}"
+    res = cache.get(key)
+    if res is None:
+        res = backtest.run(data, TF_SECONDS[tf])
+        cache.put(key, res, ttl=cache.ttl_for(tf))
+    return {"symbol": asset["symbol"], "tf": tf, "backtest": res}
 
 
 @app.get("/report")

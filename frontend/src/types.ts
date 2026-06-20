@@ -410,6 +410,46 @@ export interface SignalData extends Technical {
   disclaimer: string;
 }
 
+export interface BacktestTrade {
+  direction: "long" | "short";
+  entry: number;
+  exit: number;
+  entry_time: number;
+  exit_time: number;
+  result: "win" | "loss";
+  r: number;
+  confidence: number;
+}
+
+export interface EquityPoint {
+  t: number;
+  r: number;
+}
+
+export interface BacktestResult {
+  trades: number;
+  wins: number;
+  losses: number;
+  win_rate: number | null;
+  net_r: number;
+  avg_win_r: number | null;
+  avg_loss_r: number | null;
+  profit_factor: number | null;
+  expectancy_r: number | null;
+  max_drawdown_r: number;
+  best_r: number | null;
+  worst_r: number | null;
+  equity: EquityPoint[];
+  recent: BacktestTrade[];
+  note?: string;
+}
+
+export interface BacktestResponse {
+  symbol: string;
+  tf: string;
+  backtest: BacktestResult;
+}
+
 export interface AccuracyStat {
   calls: number;
   hits: number;
