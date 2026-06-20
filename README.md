@@ -6,7 +6,7 @@
 
 Live candles, 17 technical indicators, regime-aware signals, AI reasoning, next-candle forecasting and a self-scoring accuracy report — in a clean, broker-style interface.
 
-[![Live Demo](https://img.shields.io/badge/Live-Demo-2962ff?style=for-the-badge)](https://trading-ai.vercel.app)
+[![Live Demo](https://img.shields.io/badge/Live-Demo-2962ff?style=for-the-badge)](https://ai-trend-predictor-nu.vercel.app)
 &nbsp;
 [![CI](https://img.shields.io/github/actions/workflow/status/ralitabi/Trading-AI/ci.yml?branch=main&style=for-the-badge&label=CI)](https://github.com/ralitabi/Trading-AI/actions/workflows/ci.yml)
 &nbsp;
@@ -16,7 +16,7 @@ Live candles, 17 technical indicators, regime-aware signals, AI reasoning, next-
 &nbsp;
 ![License](https://img.shields.io/badge/License-MIT-8891a5?style=for-the-badge)
 
-**[Open the live app →](https://trading-ai.vercel.app)**
+**[Open the live app →](https://ai-trend-predictor-nu.vercel.app)**
 
 <img src="docs/dashboard.png" alt="Trading AI dashboard" width="100%">
 
