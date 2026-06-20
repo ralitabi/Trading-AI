@@ -81,6 +81,20 @@ export const fetchPortfolio = () =>
 export const fetchBacktest = (symbol: string, tf: string) =>
   get<BacktestResponse>(`/backtest/${symbol}?tf=${tf}`);
 
+export const fetchNotifyConfig = () =>
+  get<{ channels: string[] }>("/notify/config");
+
+/** Relay an alert to the server's configured chat channels. Fire-and-forget:
+ *  never throws — browser notifications are the primary, always-on channel. */
+export const postNotify = (title: string, message = "") =>
+  fetch(`${API}/notify`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ title, message }),
+  })
+    .then((r) => (r.ok ? r.json() : null))
+    .catch(() => null);
+
 export const fetchReport = (symbol?: string, tf?: string) => {
   const q = new URLSearchParams();
   if (symbol) q.set("symbol", symbol);

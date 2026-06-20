@@ -26,6 +26,7 @@ import OrderBook from "./components/OrderBook";
 import NewsPanel from "./components/NewsPanel";
 import PaperPortfolio from "./components/PaperPortfolio";
 import AICard from "./components/AICard";
+import AlertsPanel from "./components/AlertsPanel";
 import ReportPage from "./components/ReportPage";
 import { useIndicators } from "./useIndicators";
 
@@ -786,6 +787,15 @@ function Dashboard() {
         </section>
         <aside className="sidebar">
           {signal ? <SignalPanel s={signal} /> : !error && <div className="panel">Loading signal…</div>}
+          {signal && (
+            <AlertsPanel
+              symbol={symbol}
+              tf={tf}
+              name={current?.name ?? symbol}
+              bias={signal.bias}
+              price={shownPrice}
+            />
+          )}
           {signal && (
             <IndicatorPanel
               indicators={signal.indicators}

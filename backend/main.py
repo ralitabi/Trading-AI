@@ -10,12 +10,13 @@ load_dotenv()
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 
 from data import cache, calendar, context, crypto, market, orderbook, store
 from data.assets import ASSETS, TIMEFRAMES, get_asset
 from engine import (
-    ai, avgline, backtest, chartpatterns, forecast, indicators, news, overlays, paper, patterns, scoring,
-    signal, timing, trendcast, trends, volprofile,
+    ai, alerts, avgline, backtest, chartpatterns, forecast, indicators, news, overlays, paper,
+    patterns, scoring, signal, timing, trendcast, trends, volprofile,
 )
 
 TF_SECONDS = {"1m": 60, "5m": 300, "15m": 900, "1h": 3600, "4h": 14400, "1d": 86400, "1wk": 604800}
@@ -454,6 +455,24 @@ def accuracy_report(symbol: str | None = Query(None), tf: str | None = Query(Non
     except Exception:
         pass  # scoring hiccups must not hide the existing stats
     return {**store.report(symbol.upper() if symbol else None, tf), "disclaimer": DISCLAIMER}
+
+
+class NotifyRequest(BaseModel):
+    title: str
+    message: str = ""
+
+
+@app.get("/notify/config")
+def notify_config():
+    """Which alert relay channels (Telegram/Discord) the server has configured."""
+    return {"channels": alerts.channels()}
+
+
+@app.post("/notify")
+def post_notify(req: NotifyRequest):
+    """Relay a browser-triggered alert (signal flip / price cross) to the
+    configured chat channels. No-op (sent: []) when none are configured."""
+    return alerts.notify(req.title, req.message)
 
 
 @app.get("/history/{symbol}")
