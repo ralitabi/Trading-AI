@@ -27,6 +27,7 @@ import NewsPanel from "./components/NewsPanel";
 import PaperPortfolio from "./components/PaperPortfolio";
 import AICard from "./components/AICard";
 import AlertsPanel from "./components/AlertsPanel";
+import Lazy from "./components/Lazy";
 import ReportPage from "./components/ReportPage";
 import { useIndicators } from "./useIndicators";
 
@@ -804,15 +805,17 @@ function Dashboard() {
             />
           )}
           {signal && <TradeSetup s={signal} />}
-          {trendcast && <TrendForecast f={trendcast} />}
-          {showPatterns && patterns && <PatternsPanel p={patterns} />}
-          {showPatterns && chartPatterns.length > 0 && <ChartPatternsPanel patterns={chartPatterns} />}
-          {marketCtx && <MarketContext c={marketCtx} />}
-          {orderBook && <OrderBook o={orderBook} />}
-          {volProfile && <VolumeProfile p={volProfile} />}
-          {(news || calendar.length > 0) && <NewsPanel news={news} events={calendar} />}
-          {portfolio && <PaperPortfolio p={portfolio} />}
-          {prediction && <AICard p={prediction} />}
+          {trendcast && <Lazy><TrendForecast f={trendcast} /></Lazy>}
+          {showPatterns && patterns && <Lazy><PatternsPanel p={patterns} /></Lazy>}
+          {showPatterns && chartPatterns.length > 0 && (
+            <Lazy><ChartPatternsPanel patterns={chartPatterns} /></Lazy>
+          )}
+          {marketCtx && <Lazy><MarketContext c={marketCtx} /></Lazy>}
+          {orderBook && <Lazy><OrderBook o={orderBook} /></Lazy>}
+          {volProfile && <Lazy><VolumeProfile p={volProfile} /></Lazy>}
+          {(news || calendar.length > 0) && <Lazy><NewsPanel news={news} events={calendar} /></Lazy>}
+          {portfolio && <Lazy><PaperPortfolio p={portfolio} /></Lazy>}
+          {prediction && <Lazy><AICard p={prediction} /></Lazy>}
         </aside>
       </main>
 

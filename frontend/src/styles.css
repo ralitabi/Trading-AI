@@ -775,6 +775,12 @@ body {
 .alerts-clear:hover { color: var(--red); }
 .alerts-foot { display: flex; align-items: center; gap: 10px; margin-top: 12px; font-size: 11px; }
 
+/* lazy-mount placeholder (mobile) — reserves space so scrolling stays smooth */
+.lazy-ph {
+  background: var(--bg-panel); border: 1px solid var(--border);
+  border-radius: 10px; opacity: 0.4;
+}
+
 .mark { font-weight: 800; }
 .mark-hit { color: var(--green); }
 .mark-miss { color: var(--red); }
@@ -1244,8 +1250,14 @@ body {
 
   /* report: single-column cards + readable tables */
   .stat-cards, .quality-cards, .trend-persist-row { grid-template-columns: 1fr; }
+  .bt-grid { grid-template-columns: repeat(2, 1fr); }
   .report-head { flex-wrap: wrap; gap: 8px; }
   .report-table { font-size: 11px; }
   .report-table th, .report-table td { padding: 6px 6px; }
   .trend-top { gap: 10px; }
+
+  /* alerts: let the price-alert controls wrap instead of overflowing */
+  .alerts-row { flex-wrap: wrap; }
+  .alerts-input { flex-basis: 100%; }
+  .equity-svg { height: 110px; }
 }
