@@ -632,7 +632,9 @@ function Dashboard() {
     <div className="app">
       <header className="topbar">
         <div className="logo">
-          AI <span>Trend Predictor</span>
+          <img className="logo-img" alt="Trading AI"
+            src={theme === "dark" ? "/logo-mark-light.jpeg" : "/logo-mark-dark.jpeg"} />
+          Trading <span>AI</span>
         </div>
         <AssetPicker assets={assets} symbol={symbol} onSelect={setSymbol} />
         <TimeframePicker tf={tf} onSelect={setTf} />
@@ -806,10 +808,11 @@ function Dashboard() {
 
       <footer className="app-footer">
         <div className="foot-disclaimer">
-          <span className="foot-shield">▲</span>
+          <img className="foot-logo" alt="Trading AI"
+            src={theme === "dark" ? "/logo-mark-light.jpeg" : "/logo-mark-dark.jpeg"} />
           <div>
-            <div className="foot-disc-title">AI Trend Predictor</div>
-            <div className="foot-disc-sub">Professional market analysis &amp; signal engine</div>
+            <div className="foot-disc-title">Trading AI</div>
+            <div className="foot-disc-sub">Real-time market intelligence</div>
           </div>
         </div>
         <div className="foot-meta">

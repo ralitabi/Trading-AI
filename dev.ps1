@@ -1,5 +1,5 @@
 # ============================================================
-#  AI Trend Predictor - dev runner
+#  Trading AI - dev runner
 #  Starts BOTH servers with auto-reload:
 #    backend  : uvicorn --reload  -> restarts on any .py change
 #    frontend : vite (HMR)        -> updates browser instantly on save
@@ -25,7 +25,7 @@ foreach ($port in 8742, 8000, 5173) {
 }
 
 Write-Host ""
-Write-Host "  AI Trend Predictor - starting dev environment" -ForegroundColor Cyan
+Write-Host "  Trading AI - starting dev environment" -ForegroundColor Cyan
 Write-Host "  Backend  -> http://127.0.0.1:8742  (auto-reloads on backend changes)"
 Write-Host "  Frontend -> http://localhost:5173  (hot-updates on frontend changes)"
 Write-Host ""
@@ -33,11 +33,11 @@ Write-Host ""
 # Backend: uvicorn watches backend/ and restarts itself on every file change.
 # WATCHFILES_FORCE_POLLING: OneDrive folders swallow file-change notifications,
 # so without polling the auto-reload silently never fires.
-$backendCmd = "`$host.UI.RawUI.WindowTitle = 'Trend Predictor - BACKEND :8742'; Set-Location '$root\backend'; `$env:WATCHFILES_FORCE_POLLING='true'; python -m uvicorn main:app --reload --port 8742"
+$backendCmd = "`$host.UI.RawUI.WindowTitle = 'Trading AI - BACKEND :8742'; Set-Location '$root\backend'; `$env:WATCHFILES_FORCE_POLLING='true'; python -m uvicorn main:app --reload --port 8742"
 Start-Process powershell -ArgumentList '-NoExit', '-Command', $backendCmd
 
 # Frontend: Vite HMR pushes changes to the browser without even refreshing
-$frontendCmd = "`$host.UI.RawUI.WindowTitle = 'Trend Predictor - FRONTEND :5173'; Set-Location '$root\frontend'; npm run dev"
+$frontendCmd = "`$host.UI.RawUI.WindowTitle = 'Trading AI - FRONTEND :5173'; Set-Location '$root\frontend'; npm run dev"
 Start-Process powershell -ArgumentList '-NoExit', '-Command', $frontendCmd
 
 # Open the dashboard once the frontend is up

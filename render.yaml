@@ -3,7 +3,7 @@
 # you for the two secret keys (OPENAI_API_KEY, ANTHROPIC_API_KEY).
 services:
   - type: web
-    name: ai-trend-predictor-api
+    name: trading-ai-api
     runtime: python
     plan: free
     rootDir: backend

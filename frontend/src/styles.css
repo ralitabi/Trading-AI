@@ -117,10 +117,10 @@ body {
 }
 .logo {
   font-weight: 800; font-size: 15px; letter-spacing: 0.3px;
-  color: var(--accent); white-space: nowrap; display: flex; align-items: center; gap: 6px;
+  color: var(--text); white-space: nowrap; display: flex; align-items: center; gap: 8px;
 }
-.logo::before { content: "▲"; font-size: 11px; color: var(--green-bright); }
-.logo span { color: var(--text); }
+.logo-img { width: 28px; height: 28px; border-radius: 7px; object-fit: cover; box-shadow: 0 1px 5px rgba(0,0,0,0.28); }
+.logo span { color: var(--accent); }
 
 .asset-tabs, .tf-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
 
@@ -1059,10 +1059,7 @@ body {
   flex-wrap: wrap;
 }
 .foot-disclaimer { display: flex; align-items: center; gap: 10px; }
-.foot-shield {
-  width: 30px; height: 30px; display: grid; place-items: center;
-  background: rgba(38,166,154,0.12); border-radius: 8px; font-size: 14px;
-}
+.foot-logo { width: 30px; height: 30px; border-radius: 8px; object-fit: cover; box-shadow: 0 1px 4px rgba(0,0,0,0.25); }
 .foot-disc-title { font-size: 12px; font-weight: 600; color: var(--text); }
 .foot-disc-sub { font-size: 11px; color: var(--text-dim); }
 .foot-meta { display: flex; gap: 28px; }

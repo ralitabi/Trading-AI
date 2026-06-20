@@ -1,4 +1,4 @@
-"""AI Trend Predictor — FastAPI backend.
+"""Trading AI — FastAPI backend.
 
 Run locally:  uvicorn main:app --reload --port 8000
 """
@@ -20,7 +20,7 @@ from engine import (
 
 TF_SECONDS = {"1m": 60, "5m": 300, "15m": 900, "1h": 3600, "4h": 14400, "1d": 86400, "1wk": 604800}
 
-app = FastAPI(title="AI Trend Predictor", version="0.2.0")
+app = FastAPI(title="Trading AI", version="0.2.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -29,7 +29,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-DISCLAIMER = "AI Trend Predictor — professional market analysis & signal engine."
+DISCLAIMER = "Trading AI — real-time market intelligence."
 
 
 def _analyze_closed(data: list[dict]) -> dict:
@@ -95,7 +95,7 @@ def _candles_for(symbol: str, tf: str, limit: int = 300) -> list[dict]:
 
 @app.get("/")
 def root():
-    return {"app": "AI Trend Predictor", "status": "ok", "disclaimer": DISCLAIMER}
+    return {"app": "Trading AI", "status": "ok", "disclaimer": DISCLAIMER}
 
 
 @app.get("/assets")

@@ -1,6 +1,6 @@
 <div align="center">
 
-# AI Trend Predictor
+# Trading AI
 
 **A real-time, AI-assisted market analysis dashboard for crypto, forex, commodities and indices.**
 
@@ -16,7 +16,7 @@ Live candles, 17 technical indicators, regime-aware signals, AI reasoning, next-
 
 **[Open the live app →](https://ai-trend-predictor-nu.vercel.app)**
 
-<img src="docs/dashboard.png" alt="AI Trend Predictor dashboard" width="100%">
+<img src="docs/dashboard.png" alt="Trading AI dashboard" width="100%">
 
 </div>
 
@@ -24,7 +24,7 @@ Live candles, 17 technical indicators, regime-aware signals, AI reasoning, next-
 
 ## Overview
 
-AI Trend Predictor turns raw market data into a clear, honest read on direction. It streams live candles, runs a weighted board of 17 technical indicators, layers an AI analyst over the top, and — crucially — **keeps score of its own predictions** so you always know how much to trust it.
+Trading AI turns raw market data into a clear, honest read on direction. It streams live candles, runs a weighted board of 17 technical indicators, layers an AI analyst over the top, and — crucially — **keeps score of its own predictions** so you always know how much to trust it.
 
 Every signal carries a confidence level, and the engine deliberately returns **"no edge"** when the indicators disagree rather than forcing a guess — so you always know how strong the read is.
 

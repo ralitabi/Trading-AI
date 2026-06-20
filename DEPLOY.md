@@ -1,4 +1,4 @@
-# Deploying AI Trend Predictor
+# Deploying Trading AI
 
 Two pieces:
 
