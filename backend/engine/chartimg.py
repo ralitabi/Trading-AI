@@ -1,10 +1,11 @@
 """Render a candlestick PNG for Telegram signals.
 
-A self-contained matplotlib (Agg) drawing of the recent candles in the app's
-dark theme, with:
-  - the average (trend) line + its orange forward projection ("where it's heading"),
-  - the projected next candle drawn as a dashed ghost,
-  - entry / stop / target lines and shaded risk (red) + reward (green) zones.
+A self-contained matplotlib (Agg) drawing in the app's dark theme:
+  - candles + the average (trend) line and its orange forward projection,
+  - the projected next candle as a dashed ghost,
+  - entry / stop / target lines with shaded risk (red) + reward (green) zones,
+  - an INDICATOR BOARD strip below the chart showing, of the 17 indicators,
+    which vote UP / NEUTRAL / DOWN (a stacked bar + the names).
 Best-effort: callers fall back to a text message if this raises.
 """
 import io
@@ -15,10 +16,14 @@ matplotlib.use("Agg")  # headless — no display needed (serverless)
 import matplotlib.pyplot as plt  # noqa: E402
 
 _BG = "#0b0e14"
+_PANEL = "#111722"
 _GRID = "#1b2230"
 _TEXT = "#aab3c5"
+_FAINT = "#7f8aa3"
+_HEAD = "#e8edf5"
 _UP = "#26a69a"
 _DOWN = "#ef5350"
+_NEUTRAL = "#8a93a8"
 _AVG = "#f5c518"      # average line (realized)
 _PROJ = "#ff8a1f"     # average line projection (where it's heading)
 
@@ -27,14 +32,55 @@ def _fmt(p: float) -> str:
     return f"{p:,.2f}" if p >= 100 else f"{p:.5f}"
 
 
+def _draw_board(ax, details: list[dict]) -> None:
+    """Indicator vote breakdown: stacked bar + the names in each group."""
+    avail = [d for d in details if d.get("available", True) and not d.get("disabled")]
+    ups = [d["name"] for d in avail if d["vote"] == "up"]
+    neu = [d["name"] for d in avail if d["vote"] == "neutral"]
+    dns = [d["name"] for d in avail if d["vote"] == "down"]
+    total = len(avail) or 1
+
+    ax.axis("off")
+    ax.set_xlim(0, 1)
+    ax.set_ylim(0, 1)
+    ax.text(0, 0.97, f"INDICATOR BOARD · {len(avail)} active",
+            fontsize=9, fontweight="bold", color=_HEAD, va="top")
+
+    # stacked sentiment bar
+    y, h, x = 0.6, 0.16, 0.0
+    for cnt, col in ((len(ups), _UP), (len(neu), _NEUTRAL), (len(dns), _DOWN)):
+        w = cnt / total
+        if w > 0:
+            ax.add_patch(plt.Rectangle((x, y), w, h, facecolor=col, edgecolor=_BG, lw=1.2))
+            if w > 0.05:
+                ax.text(x + w / 2, y + h / 2, str(cnt), ha="center", va="center",
+                        color="#0b0e14", fontsize=8.5, fontweight="bold")
+            x += w
+
+    # name rows
+    rows = [("▲ UP", _UP, ups), ("■ NEUTRAL", _NEUTRAL, neu), ("▼ DOWN", _DOWN, dns)]
+    yy = 0.34
+    for head, col, names in rows:
+        ax.text(0.0, yy, f"{head} · {len(names)}", fontsize=7.5, fontweight="bold",
+                color=col, va="center")
+        ax.text(0.165, yy, "  ".join(names) if names else "—", fontsize=7,
+                color=col, va="center")
+        yy -= 0.17
+
+
 def render(candles: list[dict], plan: dict | None, forecast: dict | None,
            title: str, subtitle: str = "", avg_points: list[dict] | None = None,
-           proj_bars: int = 8, bars: int = 60) -> bytes:
+           details: list[dict] | None = None, proj_bars: int = 8, bars: int = 60) -> bytes:
     data = candles[-bars:]
     if len(data) < 5:
         raise ValueError("not enough candles to draw")
 
-    fig, ax = plt.subplots(figsize=(9, 5), dpi=115)
+    if details:
+        fig, (ax, ax2) = plt.subplots(2, 1, figsize=(9, 6.4), dpi=115,
+                                      gridspec_kw={"height_ratios": [3.3, 1.25], "hspace": 0.12})
+    else:
+        fig, ax = plt.subplots(figsize=(9, 5), dpi=115)
+        ax2 = None
     fig.patch.set_facecolor(_BG)
     ax.set_facecolor(_BG)
 
@@ -43,9 +89,8 @@ def render(candles: list[dict], plan: dict | None, forecast: dict | None,
     base = times[0]
     x_of = lambda t: (t - base) / step  # noqa: E731
     n = len(data)
-    x_max = n - 1 + proj_bars + 1  # leave room for projection + ghost candle
+    x_max = n - 1 + proj_bars + 1
 
-    # risk (entry→stop) and reward (entry→target) zones behind everything
     if plan:
         e, s, t = plan.get("entry"), plan.get("stop"), plan.get("target")
         if e and t:
@@ -61,7 +106,6 @@ def render(candles: list[dict], plan: dict | None, forecast: dict | None,
         ax.add_patch(plt.Rectangle((i - 0.3, lo), 0.6, max(hi - lo, (hi or 1) * 1e-6),
                                    facecolor=color, edgecolor=color, zorder=4))
 
-    # average line: realized (yellow) + forward projection (orange dashed)
     if avg_points:
         tr = [(x_of(p["time"]), p["value"]) for p in avg_points
               if p.get("seg") == "trend" and -1 <= x_of(p["time"]) <= n]
@@ -71,14 +115,12 @@ def render(candles: list[dict], plan: dict | None, forecast: dict | None,
             ax.plot([x for x, _ in tr], [y for _, y in tr], color=_AVG,
                     linewidth=1.6, alpha=0.9, zorder=5, label="Average line")
         if pr:
-            # bridge from the last realized point into the projection
             if tr:
                 pr = [tr[-1]] + pr
             ax.plot([x for x, _ in pr], [y for _, y in pr], color=_PROJ,
                     linewidth=1.6, linestyle="--", alpha=0.95, zorder=5,
                     label="Projected (heading)")
 
-    # projected next candle as a hollow dashed ghost just past the last bar
     if forecast:
         x = n
         up = forecast["close"] >= forecast["open"]
@@ -99,7 +141,6 @@ def render(candles: list[dict], plan: dict | None, forecast: dict | None,
                 ax.text(x_max, y, f"{lab} {_fmt(y)} ", color=col, fontsize=8,
                         va="bottom", ha="right", zorder=6)
 
-    # make sure the whole trade (stop & target) is visible, not just the candles
     ys = [c["low"] for c in data] + [c["high"] for c in data]
     if plan:
         ys += [v for v in (plan.get("entry"), plan.get("stop"), plan.get("target")) if v]
@@ -108,7 +149,7 @@ def render(candles: list[dict], plan: dict | None, forecast: dict | None,
     pad = (max(ys) - min(ys)) * 0.07 or 1
     ax.set_ylim(min(ys) - pad, max(ys) + pad)
 
-    ax.set_title(title, color="#e8edf5", fontsize=14, fontweight="bold", loc="left", pad=16)
+    ax.set_title(title, color=_HEAD, fontsize=14, fontweight="bold", loc="left", pad=16)
     if subtitle:
         ax.text(0, 1.025, subtitle, transform=ax.transAxes, color=_TEXT, fontsize=9.5, va="bottom")
     ax.grid(True, color=_GRID, linewidth=0.6, alpha=0.6)
@@ -117,11 +158,14 @@ def render(candles: list[dict], plan: dict | None, forecast: dict | None,
         sp.set_color(_GRID)
     ax.set_xticks([])
     ax.set_xlim(-1, x_max)
-    if ax.get_legend_handles_labels()[1]:  # only if something is labelled
+    if ax.get_legend_handles_labels()[1]:
         ax.legend(loc="upper left", fontsize=7.5, framealpha=0.0, labelcolor=_TEXT).set_zorder(7)
 
+    if ax2 is not None:
+        ax2.set_facecolor(_PANEL)
+        _draw_board(ax2, details or [])
+
     buf = io.BytesIO()
-    fig.tight_layout()
     fig.savefig(buf, format="png", facecolor=_BG, bbox_inches="tight")
     plt.close(fig)
     return buf.getvalue()

@@ -16,7 +16,8 @@ def test_build_message_long_is_plain_and_complete():
     msg = broadcast.build_message("Bitcoin", "1h", scored, _analysis(), plan,
                                   fc, None, None, None, 1_700_000_000, 3600)
     assert "BUY" in msg and "going UP" in msg
-    assert "81%" in msg
+    assert "81% chance" in msg            # "chance", not "confidence"
+    assert "Timeframe" in msg
     assert "BUY now" in msg and "Stop loss" in msg and "Take profit" in msg
     assert "Next candle" in msg
     assert "ENTER NOW" in msg
@@ -35,7 +36,7 @@ def test_build_message_short_with_horizon_avgline_window():
     msg = broadcast.build_message("Gold", "1h", scored, _analysis(), plan,
                                   None, tcast, bw, avg_proj, 1_700_000_000, 3600)
     assert "SELL" in msg and "going DOWN" in msg
-    assert "Best hours to trade: 13:00" in msg
+    assert "Best hours: 13:00" in msg
     assert "Average line: falling" in msg
     assert "6h" in msg
 
@@ -48,10 +49,17 @@ def test_avg_projection_direction():
 
 
 def test_chart_render_returns_png(make_candles):
+    details = [
+        {"name": "RSI", "vote": "up", "available": True},
+        {"name": "MACD", "vote": "up", "available": True},
+        {"name": "CCI", "vote": "neutral", "available": True},
+        {"name": "ROC", "vote": "down", "available": True},
+    ]
     png = chartimg.render(
         make_candles(120),
         {"entry": 100.0, "stop": 97.0, "target": 105.0, "rr": 1.7},
-        None, "BTC 1h UP", "confidence 80%",
+        {"open": 100.0, "high": 101.0, "low": 99.5, "close": 100.6},
+        "BTC · BUY · 1h", "80% chance · 1-hour", details=details,
     )
     assert isinstance(png, bytes) and len(png) > 1000
     assert png[:8] == b"\x89PNG\r\n\x1a\n"  # PNG magic number

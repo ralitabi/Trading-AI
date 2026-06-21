@@ -1,11 +1,10 @@
-"""Telegram signal-service — posts high-conviction setups to the group on a
-schedule, one per market per candle, with a rendered chart.
+"""Telegram signal-service — posts high-chance setups to the group on a schedule.
 
-Runs server-side off the same scheduled trigger as the snapshot collector, so it
-works 24/7 with nobody on the site. For every tracked asset on 1h it computes the
-live read (same scorer + higher-timeframe confluence the dashboard uses), saves
-the snapshot, and — only when the call is a confident directional one — renders a
-chart and broadcasts it (deduped per candle so it never spams).
+For each tracked asset it scans several timeframes (scalp → swing) and broadcasts
+the ONE with the strongest read — so the trade duration matches the setup (a 5m
+scalp, a 1h intraday, a 1d swing, …), not a fixed timeframe. It only sends when
+the chance is ≥80%, one message per market per candle (deduped), with a polished
+chart that includes the 17-indicator board. Runs server-side, 24/7.
 """
 from datetime import datetime
 from zoneinfo import ZoneInfo
@@ -15,7 +14,11 @@ from data.assets import ASSETS
 from engine import alerts, avgline, chartimg, forecast, indicators, signal, timing, trendcast
 
 TF_SECONDS = {"1m": 60, "5m": 300, "15m": 900, "1h": 3600, "4h": 14400, "1d": 86400, "1wk": 604800}
-MIN_CONFIDENCE = 80  # only broadcast trades the engine is highly confident in (≥80%)
+MIN_CONFIDENCE = 80          # only broadcast setups with a ≥80% chance
+SCAN_TFS = ["5m", "15m", "1h", "1d"]  # pick the strongest of these per asset
+
+_TF_HUMAN = {"5m": "5-minute (scalp)", "15m": "15-minute", "1h": "1-hour",
+             "4h": "4-hour", "1d": "1-day (swing)", "1wk": "1-week"}
 
 # entry-time clocks for the markets the user follows (shown in AM/PM)
 _ZONES = [("🇺🇸 USA", "America/New_York"), ("🇬🇧 UK", "Europe/London"),
@@ -38,7 +41,7 @@ def _times_block(ts: int) -> list[str]:
     for label, zone in _ZONES:
         clk = _clock(ts, zone)
         if clk:
-            out.append(f"{label} {clk}")
+            out.append(f"{label}: {clk}")
     return out
 
 
@@ -58,89 +61,106 @@ def build_message(name: str, tf: str, scored: dict, analysis: dict, plan: dict,
                   fc: dict | None, tcast: dict | None, bw: dict | None,
                   avg_proj: dict | None, candle_open: int, tf_sec: int) -> str:
     bias = scored["bias"]
-    emoji = "🟢" if bias == "up" else "🔴"
-    action = "BUY" if bias == "up" else "SELL"
-    updown = "UP" if bias == "up" else "DOWN"
-    arrow = "▲" if bias == "up" else "▼"
+    up = bias == "up"
+    emoji = "🟢" if up else "🔴"
+    action = "BUY" if up else "SELL"
+    ud = "UP" if up else "DOWN"
+    arrow = "▲" if up else "▼"
     entry, stop, target, rr = plan["entry"], plan["stop"], plan["target"], plan["rr"]
-    risk_pct = abs((stop - entry) / entry * 100) if entry else 0
-    rew_pct = abs((target - entry) / entry * 100) if entry else 0
+    risk = abs((stop - entry) / entry * 100) if entry else 0
+    rew = abs((target - entry) / entry * 100) if entry else 0
 
     lines = [
-        f"{emoji} {name} — {action} (price going {updown})",
-        f"Strong signal · {scored['confidence']}% confident",
+        f"{emoji} {name} — {action}",
+        f"Price likely going {ud} · {scored['confidence']}% chance",
         "",
-        "WHAT'S HAPPENING",
-        f"• Direction: {updown} {arrow}",
+        f"⏱ Timeframe: {_TF_HUMAN.get(tf, tf)} trade",
+        "",
+        "📊 WHAT'S HAPPENING",
+        f"• Direction: {ud} {arrow}",
     ]
     if fc:
-        nc = "UP" if fc["close"] >= fc["open"] else "DOWN"
-        lines.append(f"• Next candle: likely {nc} (about {abs(fc.get('body_pct', 0)):.2f}%, to {_fmt(fc['close'])})")
+        nc_up = fc["close"] >= fc["open"]
+        sign = "+" if nc_up else "−"
+        lines.append(f"• Next candle: likely {'UP' if nc_up else 'DOWN'} "
+                     f"({sign}{abs(fc.get('body_pct', 0)):.2f}%, to {_fmt(fc['close'])})")
     if avg_proj:
-        lines.append(f"• Average line: {avg_proj['direction']} → heading to {_fmt(avg_proj['to'])}")
+        lines.append(f"• Average line: {avg_proj['direction']} → toward {_fmt(avg_proj['to'])}")
     if tcast and tcast.get("horizons"):
         h = next((x for x in tcast["horizons"] if x["direction"] == bias), tcast["horizons"][0])
-        lines.append(f"• Likely to keep going {updown} for about {h['label']} (target {_fmt(h['target'])})")
+        lines.append(f"• Should keep {'rising' if up else 'falling'} ~{h['label']} "
+                     f"(target {_fmt(h['target'])})")
 
     lines += [
         "",
-        "YOUR TRADE",
-        f"• {action} now:    {_fmt(entry)}",
-        f"• Stop loss:   {_fmt(stop)}   (you risk −{risk_pct:.1f}%)",
-        f"• Take profit: {_fmt(target)}   (you gain +{rew_pct:.1f}%)",
-        f"• Risk : Reward — 1 : {rr}",
+        "🎯 YOUR TRADE",
+        f"• {action} now: {_fmt(entry)}",
+        f"• Stop loss: {_fmt(stop)}  (risk −{risk:.1f}%)",
+        f"• Take profit: {_fmt(target)}  (gain +{rew:.1f}%)",
+        f"• Risk/Reward: 1 : {rr}",
         "",
-        f"⏰ ENTER NOW — this {tf} candle closes at:",
+        f"⏰ ENTER NOW — {tf} candle closes:",
     ]
-    clocks = _times_block(candle_open + tf_sec)
-    if clocks:
-        lines.append("   " + "   ".join(clocks[:2]))
-        if len(clocks) > 2:
-            lines.append("   " + "   ".join(clocks[2:]))
+    lines += _times_block(candle_open + tf_sec)
     if bw:
-        lines.append(f"\nBest hours to trade: {int(bw['start_utc']):02d}:00–{int(bw['end_utc']):02d}:00 UTC")
-    lines.append("Trading AI · sent only when ≥80% confident")
+        lines.append(f"\n🕒 Best hours: {int(bw['start_utc']):02d}:00–{int(bw['end_utc']):02d}:00 UTC")
+    lines.append("\n📈 Chart + indicator board below")
+    lines.append("Trading AI · only sends at ≥80% chance")
     return "\n".join(lines)
 
 
-def run(candles_for, htf_of, min_conf: int = MIN_CONFIDENCE, force: bool = False) -> dict:
-    """One broadcast pass over all assets on 1h. `candles_for(sym, tf, n)` and
-    `htf_of(sym, tf) -> (htf, htf_trend)` are injected by the API layer."""
-    tf, tf_sec = "1h", TF_SECONDS["1h"]
+def run(candles_for, htf_of, min_conf: int = MIN_CONFIDENCE, force: bool = False,
+        symbols: list[str] | None = None) -> dict:
+    """One broadcast pass. For each asset, scan SCAN_TFS, save each snapshot, and
+    broadcast the single strongest ≥min_conf setup (deduped per candle).
+    `candles_for(sym, tf, n)` and `htf_of(sym, tf) -> (htf, htf_trend)` injected
+    by the API layer; `symbols` optionally limits the scan (for a targeted test)."""
+    targets = [s.upper() for s in symbols] if symbols else list(ASSETS)
     sent = skipped = saved = errors = 0
     posted: list[str] = []
 
-    for sym, asset in ASSETS.items():
+    for sym in targets:
+        asset = ASSETS.get(sym)
+        if not asset:
+            continue
         try:
-            data = candles_for(sym, tf, 300)
-            closed = data[:-1] if len(data) > indicators.MIN_CANDLES else data
-            analysis = indicators.analyze(closed)
-            _, htf_trend = htf_of(sym, tf)
+            best = None
+            for tf in SCAN_TFS:
+                try:
+                    data = candles_for(sym, tf, 300)
+                    closed = data[:-1] if len(data) > indicators.MIN_CANDLES else data
+                    analysis = indicators.analyze(closed)
+                    scored = signal.score(analysis)  # no HTF during the scan (perf)
+                except Exception:
+                    continue
+                try:  # save every scanned timeframe → feeds history + accuracy
+                    store.log_signal(sym, tf, analysis["price"], scored, analysis)
+                    store.log_prediction(
+                        sym, tf, analysis["price"],
+                        {"bias": scored["bias"], "confidence": scored["confidence"],
+                         "volatility": analysis["volatility"]},
+                        {"direction": "neutral", "confidence": 0})
+                    saved += 1
+                except Exception:
+                    pass
+                if scored["bias"] in ("up", "down") and (
+                        best is None or scored["confidence"] > best["scored"]["confidence"]):
+                    best = {"tf": tf, "data": data, "analysis": analysis, "scored": scored}
+
+            if not alerts.telegram_configured() or not best:
+                skipped += 1
+                continue
+
+            tf, data, analysis = best["tf"], best["data"], best["analysis"]
+            tf_sec = TF_SECONDS[tf]
+            _, htf_trend = htf_of(sym, tf)               # final score with HTF confluence
             scored = signal.score(analysis, htf_trend)
+            if scored["bias"] not in ("up", "down") or scored["confidence"] < min_conf:
+                skipped += 1
+                continue
             price = data[-1]["close"]
             plan = signal.make_plan(scored["bias"], price, analysis["atr_abs"])
-            fc = forecast.project(data, tf_sec, scored["bias"], scored["confidence"])
-
-            # always save the snapshot/prediction/forecast (this also feeds the
-            # accuracy report + saved history, durable when Turso is configured)
-            try:
-                store.log_signal(sym, tf, analysis["price"], scored, analysis)
-                store.log_prediction(
-                    sym, tf, analysis["price"],
-                    {"bias": scored["bias"], "confidence": scored["confidence"],
-                     "volatility": analysis["volatility"]},
-                    {"direction": "neutral", "confidence": 0},
-                )
-                if fc:
-                    store.log_forecast(sym, tf, fc)
-                saved += 1
-            except Exception:
-                pass
-
-            # broadcast gate: configured + confident directional + once per candle
-            if not alerts.telegram_configured():
-                continue
-            if scored["bias"] not in ("up", "down") or scored["confidence"] < min_conf or not plan:
+            if not plan:
                 skipped += 1
                 continue
             candle_open = int(data[-1]["time"])
@@ -148,12 +168,18 @@ def run(candles_for, htf_of, min_conf: int = MIN_CONFIDENCE, force: bool = False
                 skipped += 1  # already sent this candle
                 continue
 
+            fc = forecast.project(data, tf_sec, scored["bias"], scored["confidence"])
+            if fc:
+                try:
+                    store.log_forecast(sym, tf, fc)
+                except Exception:
+                    pass
             try:
                 tcast = trendcast.project(data, tf_sec)
             except Exception:
                 tcast = None
-            try:
-                bw = timing.best_window(data)
+            try:  # best-hours only makes sense for intraday timeframes
+                bw = timing.best_window(data) if tf in ("5m", "15m", "1h") else None
             except Exception:
                 bw = None
             try:
@@ -169,21 +195,20 @@ def run(candles_for, htf_of, min_conf: int = MIN_CONFIDENCE, force: bool = False
             try:
                 png = chartimg.render(
                     data, plan, fc,
-                    title=f"{asset['name']} · {action} · {scored['bias'].upper()}",
-                    subtitle=f"{scored['confidence']}% confident · {tf}",
-                    avg_points=avg_points,
-                )
+                    title=f"{asset['name']} · {action} · {tf}",
+                    subtitle=f"{scored['confidence']}% chance · {_TF_HUMAN.get(tf, tf)}",
+                    avg_points=avg_points, details=analysis.get("details"))
             except Exception:
                 png = None
 
             ok = alerts.send_telegram_photo(caption, png) if png else alerts.send_telegram(caption)
             if ok:
                 sent += 1
-                posted.append(sym)
+                posted.append(f"{sym}:{tf}")
             else:
                 errors += 1
         except Exception:
             errors += 1
 
     return {"sent": sent, "skipped": skipped, "saved": saved, "errors": errors,
-            "posted": posted, "min_confidence": min_conf}
+            "posted": posted, "min_confidence": min_conf, "scanned": SCAN_TFS}
