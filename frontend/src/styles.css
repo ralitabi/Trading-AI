@@ -374,6 +374,7 @@ body {
 
 /* ---- layout ---- */
 .layout { display: flex; flex: 1; min-height: 0; gap: 12px; padding: 12px; }
+.chart-col { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; gap: 10px; }
 .chart-wrap {
   flex: 1; position: relative; min-width: 0;
   background: var(--bg-panel); border: 1px solid var(--border);
@@ -387,6 +388,37 @@ body {
   position: absolute; top: 12px; left: 16px; z-index: 5;
   color: var(--text-dim); font-size: 12px;
 }
+
+/* ---- indicator board strip (directly below the chart) ---- */
+.indbar {
+  flex: none; background: var(--bg-panel); border: 1px solid var(--border);
+  border-radius: 12px; padding: 12px 14px;
+}
+.indbar-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 9px; }
+.indbar-title {
+  font-size: 10px; font-weight: 700; letter-spacing: 1.2px;
+  text-transform: uppercase; color: var(--text-dim);
+}
+.indbar-lean { font-size: 12px; font-weight: 700; color: var(--text); }
+.indbar-track {
+  display: flex; height: 22px; border-radius: 7px; overflow: hidden; gap: 2px;
+  background: var(--bg-elevated);
+}
+.indbar-seg {
+  display: flex; align-items: center; justify-content: center;
+  font-family: "JetBrains Mono", monospace; font-size: 11px; font-weight: 700;
+  color: #0b0e14; min-width: 18px; transition: width 0.4s ease;
+}
+.indbar-seg.up { background: var(--green); }
+.indbar-seg.neu { background: #7f8aa3; }
+.indbar-seg.down { background: var(--red); }
+.indbar-groups { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 11px; }
+.indbar-group { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.indbar-tag { font-size: 11px; font-weight: 700; }
+.indbar-tag.up { color: var(--green); }
+.indbar-tag.neu { color: var(--text-dim); }
+.indbar-tag.down { color: var(--red); }
+.indbar-names { font-size: 11px; color: var(--text-dim); line-height: 1.5; }
 
 .sidebar {
   width: 392px; overflow-y: auto;
@@ -1290,4 +1322,7 @@ body {
   .alerts-row { flex-wrap: wrap; }
   .alerts-input { flex-basis: 100%; }
   .equity-svg { height: 110px; }
+
+  /* indicator board: stack the three groups */
+  .indbar-groups { grid-template-columns: 1fr; }
 }

@@ -27,6 +27,7 @@ import NewsPanel from "./components/NewsPanel";
 import PaperPortfolio from "./components/PaperPortfolio";
 import AICard from "./components/AICard";
 import AlertsPanel from "./components/AlertsPanel";
+import IndicatorBar from "./components/IndicatorBar";
 import Lazy from "./components/Lazy";
 import ReportPage from "./components/ReportPage";
 import { useIndicators } from "./useIndicators";
@@ -745,6 +746,7 @@ function Dashboard() {
       {error && <div className="error-bar">{error}</div>}
 
       <main className="layout">
+        <div className="chart-col">
         <section className={drawMode ? "chart-wrap drawing" : "chart-wrap"}>
           {loading && <div className="loading">Loading…</div>}
           <div className="draw-tools">
@@ -786,6 +788,8 @@ function Dashboard() {
             </div>
           )}
         </section>
+        {signal && <IndicatorBar indicators={signal.indicators} />}
+        </div>
         <aside className="sidebar">
           {signal ? <SignalPanel s={signal} /> : !error && <div className="panel">Loading signal…</div>}
           {signal && (
