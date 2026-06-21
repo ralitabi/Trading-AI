@@ -13,8 +13,14 @@ from data import store
 from data.assets import ASSETS
 from engine import alerts, chartimg, forecast, indicators, signal, timing, trendcast
 
+try:  # local times for the signal (UK user); falls back to UTC-only if unavailable
+    from zoneinfo import ZoneInfo
+    _LONDON = ZoneInfo("Europe/London")
+except Exception:
+    _LONDON = None
+
 TF_SECONDS = {"1m": 60, "5m": 300, "15m": 900, "1h": 3600, "4h": 14400, "1d": 86400, "1wk": 604800}
-MIN_CONFIDENCE = 75  # "high-conviction only"
+MIN_CONFIDENCE = 80  # only broadcast trades the engine is highly confident in (≥80%)
 
 
 def _fmt(p: float) -> str:
@@ -25,37 +31,56 @@ def _utc(ts: int) -> str:
     return datetime.fromtimestamp(int(ts), timezone.utc).strftime("%H:%M")
 
 
+def _london(ts: int) -> str | None:
+    if not _LONDON:
+        return None
+    try:
+        return datetime.fromtimestamp(int(ts), _LONDON).strftime("%H:%M")
+    except Exception:
+        return None
+
+
 def build_message(name: str, tf: str, scored: dict, analysis: dict, plan: dict,
                   fc: dict | None, tcast: dict | None, bw: dict | None,
                   candle_open: int, tf_sec: int) -> str:
     bias = scored["bias"]
     emoji = "🟢" if bias == "up" else "🔴"
     word = "LONG" if bias == "up" else "SHORT"
-    arrow = "UP" if bias == "up" else "DOWN"
-    entry = plan["entry"]
-    stop, target, rr = plan["stop"], plan["target"], plan["rr"]
+    updown = "UP" if bias == "up" else "DOWN"
+    entry, stop, target, rr = plan["entry"], plan["stop"], plan["target"], plan["rr"]
     stop_pct = abs((stop - entry) / entry * 100) if entry else 0
     tgt_pct = abs((target - entry) / entry * 100) if entry else 0
 
-    lines = [
-        f"{emoji} {name} · {tf} · {word}    confidence {scored['confidence']}%",
-        f"Regime: {analysis.get('trend_strength', '—')} trend (ADX {round(analysis.get('adx', 0))})",
-        "",
-        f"⏰ {_utc(candle_open)}→{_utc(candle_open + tf_sec)} UTC (this candle) → {arrow}",
-    ]
+    close_ts = candle_open + tf_sec
+    loc = _london(close_ts)
+    when = f"enter now — {tf} candle closes {_utc(close_ts)} UTC" + (f" ({loc} London)" if loc else "")
+
+    # how long the move is expected to run + where to (prefer the horizon that
+    # agrees with the call; else the nearest one)
+    how_long = None
     if tcast and tcast.get("horizons"):
-        h = tcast["horizons"][0]
-        hdir = {"up": "UP", "down": "DOWN", "sideways": "SIDEWAYS"}.get(h["direction"], h["direction"])
-        lines.append(f"🎯 Next {h['label']}: {hdir} toward {_fmt(h['target'])} ({h['confidence']}%)")
+        h = next((x for x in tcast["horizons"] if x["direction"] == bias), tcast["horizons"][0])
+        hdir = {"up": "UP", "down": "DOWN", "sideways": "flat"}.get(h["direction"], h["direction"])
+        how_long = f"~{h['label']} ({hdir} toward {_fmt(h['target'])}, {h['confidence']}%)"
+
+    lines = [
+        f"{emoji} {name} · {tf} · {word} ({updown})    confidence {scored['confidence']}%",
+        "",
+        f"📈 WHICH:    {name} likely to go {updown}",
+        f"⏰ WHEN:     {when}",
+    ]
+    if how_long:
+        lines.append(f"⌛ HOW LONG: {how_long}")
     lines += [
         "",
         f"Entry   {_fmt(entry)}",
         f"Stop    {_fmt(stop)}   (−{stop_pct:.1f}%)",
         f"Target  {_fmt(target)}   (+{tgt_pct:.1f}%, R:R {rr})",
+        "",
+        f"Regime: {analysis.get('trend_strength', '—')} trend (ADX {round(analysis.get('adx', 0))})"
+        + (f" · best hours {int(bw['start_utc']):02d}:00–{int(bw['end_utc']):02d}:00 UTC" if bw else ""),
+        "Trading AI · high-conviction signal (≥80%)",
     ]
-    if bw:
-        lines.append(f"\n🕒 Best hours: {int(bw['start_utc']):02d}:00–{int(bw['end_utc']):02d}:00 UTC")
-    lines.append("\nTrading AI · auto-generated signal")
     return "\n".join(lines)
 
 

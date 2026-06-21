@@ -14,8 +14,9 @@ def test_build_message_long_has_core_fields():
     plan = {"direction": "long", "entry": 100.0, "stop": 97.0, "target": 105.0, "rr": 1.67}
     msg = broadcast.build_message("Bitcoin", "1h", scored, _analysis(), plan,
                                   None, None, None, 1_700_000_000, 3600)
-    assert "LONG" in msg
+    assert "LONG" in msg and "UP" in msg
     assert "81%" in msg
+    assert "WHICH" in msg and "WHEN" in msg
     assert "Entry" in msg and "Stop" in msg and "Target" in msg
     assert "UTC" in msg
 
@@ -28,9 +29,9 @@ def test_build_message_short_with_horizon_and_window():
     bw = {"start_utc": 13, "end_utc": 17, "intensity": 1.4}
     msg = broadcast.build_message("Gold", "1h", scored, _analysis(), plan,
                                   None, tcast, bw, 1_700_000_000, 3600)
-    assert "SHORT" in msg
-    assert "Best hours: 13:00" in msg
-    assert "Next 6h" in msg
+    assert "SHORT" in msg and "DOWN" in msg
+    assert "best hours 13:00" in msg
+    assert "6h" in msg and "HOW LONG" in msg
 
 
 def test_chart_render_returns_png(make_candles):

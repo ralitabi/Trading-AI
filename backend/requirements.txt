@@ -10,3 +10,4 @@ feedparser>=6.0
 python-dotenv>=1.0
 libsql-client>=0.3.1  # durable Turso/libSQL store (optional; falls back to SQLite)
 matplotlib>=3.8       # renders the candlestick chart image attached to Telegram signals
+tzdata>=2024.1        # local-time (Europe/London) formatting for signals on any OS
