@@ -45,13 +45,13 @@ export default function AssetPicker({ assets, symbol, onSelect }: Props) {
     return () => document.removeEventListener("mousedown", onDown);
   }, [open]);
 
-  // reset to the category step each time the menu opens
+  // always start at the category step each time the menu opens
   useEffect(() => {
     if (open) {
-      setCat(current?.asset_class ?? null);
+      setCat(null);
       setQuery("");
     }
-  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [open]);
 
   // focus the search box when entering a category
   useEffect(() => {
