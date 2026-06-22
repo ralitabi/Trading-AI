@@ -506,14 +506,15 @@ body {
 .tb-btn:hover { color: var(--text); border-color: var(--accent); }
 .tb-btn.on { background: var(--accent-soft); color: var(--accent); border-color: transparent; }
 
-/* small risk gauges inside the chart toolbar (beside the bias chip) */
+/* small risk gauges inside the chart toolbar (beside the bias chip) — the extra
+   .riskmeter.compact specificity is needed to beat the default compact sizing */
 .charttb-meter { flex: 0 0 auto; }
 .charttb-meter .riskmeter { width: auto; gap: 0; }
-.charttb-meter .rm-title { font-size: 7px; letter-spacing: 0.2px; margin-bottom: -6px; }
-.charttb-meter .rm-svg { max-width: 70px; }
-.charttb-meter .rm-end { display: none; }       /* hide SAFE/RISKY caps to save space */
-.charttb-meter .rm-readout { margin-top: -16px; }
-.charttb-meter .rm-level { font-size: 9px; }
+.charttb-meter .riskmeter.compact .rm-title { font-size: 7px; letter-spacing: 0.2px; margin-bottom: -6px; }
+.charttb-meter .riskmeter.compact .rm-svg { max-width: 66px; }
+.charttb-meter .riskmeter.compact .rm-end { display: none; }   /* hide SAFE/RISKY caps */
+.charttb-meter .riskmeter.compact .rm-readout { margin-top: -14px; }
+.charttb-meter .riskmeter.compact .rm-level { font-size: 9px; }
 
 /* collapse toggles */
 .tb-collapse {
