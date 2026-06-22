@@ -551,9 +551,13 @@ body {
 .fg-g { color: #9acd32; }
 .fg-eg { color: #16c784; }
 
-/* Signal view — analysis panels in a masonry of cards */
-.signal-view { columns: 350px; column-gap: 14px; max-width: 1180px; margin: 0 auto; }
-.signal-view > * { break-inside: avoid; margin-bottom: 14px; }
+/* Signal view — analysis panels in two balanced columns */
+.signal-view {
+  max-width: 940px; margin: 0 auto;
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px; align-items: start;
+}
+.signal-view > * { min-width: 0; }
 
 /* collapse toggles */
 .tb-collapse {
@@ -1464,7 +1468,7 @@ body {
 
   /* hide the side strips on phones — the chart needs the width */
   .volprofile, .fgbar { display: none; }
-  .signal-view { columns: auto; }
+  .signal-view { grid-template-columns: 1fr; }
 
   /* left rail is the bottom nav on phones — never let it collapse away */
   .rail-toggle { display: none; }
