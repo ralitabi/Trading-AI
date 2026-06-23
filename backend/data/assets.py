@@ -88,9 +88,9 @@ ASSETS: dict[str, dict] = {
     "SENSEX": _y("Sensex", "index", "^BSESN"),
 
     # ---- Stocks (Yahoo) ----
-    "AAPL": _y("Apple", "stock", "AAPL"),
+    "AAPL": _y("Apple", "stock", "AAPL", broadcast=True),
     "MSFT": _y("Microsoft", "stock", "MSFT"),
-    "NVDA": _y("Nvidia", "stock", "NVDA"),
+    "NVDA": _y("Nvidia", "stock", "NVDA", broadcast=True),
     "TSLA": _y("Tesla", "stock", "TSLA"),
     "AMZN": _y("Amazon", "stock", "AMZN"),
     "GOOGL": _y("Alphabet (Google)", "stock", "GOOGL"),
